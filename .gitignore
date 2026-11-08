@@ -26,6 +26,8 @@ configs/cameras.yaml
 *.png
 *.mp4
 *.avi
+# README용 결과 이미지만 예외로 허용
+!docs/images/*.png
 
 # IDE
 .idea/
