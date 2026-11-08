@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-YwHob: 박람회 CCTV를 30초마다 캡처해 구역별 혼잡도(3단계 + 연속 점수)와 블러 이미지를 Redis로 웹 서버에 넘기는 시스템.
+YwHob: 박람회 CCTV를 10초마다 캡처해 구역별 혼잡도(3단계 + 연속 점수)와 블러 이미지를 Redis로 웹 서버에 넘기는 시스템.
 
 ## 기준 문서
 
@@ -10,9 +10,10 @@ YwHob: 박람회 CCTV를 30초마다 캡처해 구역별 혼잡도(3단계 + 연
 
 ## 현재 상태
 
-capture → detect → aggregate → blur → publish와 pipeline 연결까지 구현돼 있다. `matching.py`(spec 5.3)만 보류라 `NotImplementedError`.
+**구현 완료, 실사용 종료.** 2026-10-31 ~ 11-01 박람회에서 실제 CCTV로 운영을 마쳤다 (10초 주기, 노트북 1대).
+capture → detect → aggregate → blur → publish와 pipeline 연결까지 구현돼 있다. `matching.py`(spec 5.3, 머리 확인)는 보류 결정대로 `NotImplementedError`로 남긴다.
 검출 모델은 파인튜닝한 스몰(`s`, 기본)과 나노(`n`) 중 `--model`로 고른다 (`configs/service.yaml`의 `detector.models`).
-실제 CCTV 연결 확인, ONNX export, 벤치마크(수용 카메라 수)는 아직이다.
+스몰 가중치는 Hugging Face `illimax/YolPe`에 공개돼 있고, 학습 코드는 `github.com/lkw-k/YolPe`에 있다.
 
 ## 환경
 

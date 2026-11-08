@@ -131,7 +131,7 @@ def test_run_staggers_cameras_and_publishes(monkeypatch):
     assert not t.is_alive()
 
     first = {cid: ts for cid, ts in reversed(calls)}  # 카메라별 첫 캡처 시각
-    assert 0.4 <= first["cam02"] - first["cam01"] <= 0.6  # 30초/N 대신 1초/2대 = 0.5초 간격
+    assert 0.4 <= first["cam02"] - first["cam01"] <= 0.6  # 10초/N 대신 1초/2대 = 0.5초 간격
     assert sum(cid == "cam01" for cid, _ in calls) >= 2  # 주기마다 반복
     assert all(s.started and s.stopped for s in streams)
     assert _zone(r, "a")["status"] == "ok" and _zone(r, "b")["status"] == "ok"

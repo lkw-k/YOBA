@@ -1,6 +1,6 @@
 # 서비스 설정. (잠정) 값의 근거는 spec.md 참고.
 
-cycle_seconds: 30            # 측정 주기 (확정)
+cycle_seconds: 10            # 측정 주기 (확정: 박람회 운영 기준)
 queue_size: 4                # 단계 간 큐 크기. 가득 차면 가장 오래된 주기를 버림 (spec 6)
 
 capture:                     # spec 5.1
