@@ -90,7 +90,7 @@ class RedisConfig:
 
 @dataclass(frozen=True)
 class ServiceConfig:
-    cycle_seconds: float = 30.0
+    cycle_seconds: float = 10.0
     queue_size: int = 4
     capture: CaptureConfig = field(default_factory=CaptureConfig)
     detector: DetectorConfig = field(default_factory=DetectorConfig)

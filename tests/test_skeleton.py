@@ -22,7 +22,7 @@ def test_modules_import(module):
 
 def test_service_yaml_matches_spec():
     cfg = load_service(SERVICE)
-    assert cfg.cycle_seconds == 30
+    assert cfg.cycle_seconds == 10
     assert cfg.capture.frames == 5 and cfg.capture.window_seconds == 3.0
     assert cfg.detector.max_det == 1000
     assert cfg.aggregate.up == (0.45, 0.75) and cfg.aggregate.down == (0.35, 0.65)
