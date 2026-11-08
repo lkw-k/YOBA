@@ -8,6 +8,8 @@ YwHob은 **2026 AI 미래교육 박람회** 홈페이지에서 실시간 혼잡�
 
 **프로젝트 소개 페이지**: https://lkw-k.github.io/YwHob/
 
+**브라우저 데모 (Hugging Face Space)**: https://huggingface.co/spaces/illimax/YolPe
+
 > **핵심 성과 요약**
 > - **3,000+명**에게 2일간(2026-10-31 ~ 11-01) **서비스 중단 없이** 실시간 혼잡도 제공
 > - 원거리 사람 인식률 **약 3.5배 향상** (22.5% → 79.8%)
