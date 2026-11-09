@@ -158,3 +158,16 @@ def test_cli_live_rejects_multiple_cameras(tmp_path):
     )
     with pytest.raises(SystemExit):
         main(["--service", str(SERVICE), "--cameras", str(p), "--live"])
+
+
+def test_cli_webcam_rejects_multiple_cameras(tmp_path):
+    p = tmp_path / "c.yaml"
+    zone = "      - {zone_id: %s, roi: [[0,0],[1,0],[1,1]], capacity: 1}\n"
+    p.write_text(
+        "cameras:\n"
+        "  - id: a\n    url: rtsp://x/1\n    zones:\n" + zone % "z1"
+        + "  - id: b\n    url: rtsp://x/2\n    zones:\n" + zone % "z2",
+        encoding="utf-8",
+    )
+    with pytest.raises(SystemExit):  # 두 카메라가 같은 웹캠을 열게 되므로 막는다
+        main(["--service", str(SERVICE), "--cameras", str(p), "--webcam", "--check"])

@@ -43,8 +43,9 @@ def main(argv: list[str] | None = None) -> None:
     if args.webcam is not None:
         cameras = [dataclasses.replace(c, url=f"{WEBCAM_SCHEME}{args.webcam}") for c in cameras]
         logging.info("웹캠 %d번으로 실행", args.webcam)
-    if args.live and len(cameras) != 1:
-        logging.error("--live는 카메라 1대만 지원: %s에 %d대 (--webcam을 쓰거나 1대짜리 설정을 준다)", args.cameras, len(cameras))
+    if (args.live or args.webcam is not None) and len(cameras) != 1:
+        opt = "--live" if args.live else "--webcam"  # 웹캠 한 대를 여러 카메라가 동시에 열 수 없다
+        logging.error("%s는 카메라 1대만 지원: %s에 %d대 (1대짜리 설정을 준다)", opt, args.cameras, len(cameras))
         sys.exit(1)
     zones = sum(len(c.zones) for c in cameras)
     logging.info("설정 로드: 카메라 %d대, 구역 %d개, 모델 %s", len(cameras), zones, service.detector.model)
