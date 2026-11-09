@@ -48,7 +48,7 @@ uv run python scripts/benchmark.py            # 5장 배치 시간, 디코딩 �
 - 카메라, ROI, capacity, 마스크: `configs/cameras.yaml` (예시는 `cameras.example.yaml`)
 - 신뢰도, EMA, 단계 임계값, 블러: `configs/service.yaml`
 - 바꾼 뒤 `uv run yoba --check`로 설정 검증 (히스테리시스 간격, 구역 id 중복 등을 잡아냄)
-- 각 값의 근거는 바탕화면 `YwHob_수치결정근거.docx`와 spec 참고. 기준 밀도와 단계 임계값은 운영 정책이라 사용자 확인 없이 바꾸지 않는다.
+- 각 값의 근거는 바탕화면 `YOBA_수치결정근거.docx`와 spec 참고. 기준 밀도와 단계 임계값은 운영 정책이라 사용자 확인 없이 바꾸지 않는다.
 
 ## 하지 말 것
 
