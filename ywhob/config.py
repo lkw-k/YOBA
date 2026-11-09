@@ -219,7 +219,10 @@ def load_cameras(path: str | Path) -> list[CameraConfig]:
             raise ConfigError(f"{where}: 구역이 하나 이상 있어야 함")
 
         masks = tuple(_polygon(p, f"{where}.mask[{k}]") for k, p in enumerate(c.get("mask") or []))
-        cameras.append(CameraConfig(cam_id, str(c["url"]), tuple(zones), masks))
+        url = str(c["url"])
+        if url.lower().startswith("webcam:") and not url[len("webcam:"):].isdigit():
+            raise ConfigError(f"{where}.url: 웹캠은 webcam:번호 형식 (예: webcam:0)")
+        cameras.append(CameraConfig(cam_id, url, tuple(zones), masks))
     if not cameras:
         raise ConfigError(f"{path}: 카메라가 없음")
     return cameras
