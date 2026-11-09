@@ -208,3 +208,18 @@ def test_url_not_logged(caplog):
     _run(stream, lambda: capture_burst(stream, FAST))
     assert caplog.records
     assert "secret" not in caplog.text and "10.0.0.1" not in caplog.text
+
+
+def test_open_video_webcam_uses_device_index(monkeypatch):
+    import ywhob.capture as capture
+
+    calls = []
+    monkeypatch.setattr(capture.cv2, "VideoCapture", lambda *a, **k: calls.append(a) or FakeCapture())
+    capture.open_video("webcam:1", FAST)
+    assert calls == [(1,)]  # FFmpeg 백엔드가 아니라 장치 번호로 연다
+
+
+def test_webcam_is_live_stream():
+    stream = CameraStream(_camera("webcam:0"), FAST, opener=Opener(FakeCapture(fps=1.0)))
+    _run(stream, lambda: _wait_frame(stream))
+    assert stream._live  # 동영상 파일처럼 fps에 맞춰 늦춰 읽지 않는다

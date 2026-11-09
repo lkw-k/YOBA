@@ -94,3 +94,67 @@ def test_invalid_blur_config_rejected(tmp_path, blur):
     p.write_text(f"blur:\n  {blur}\n", encoding="utf-8")
     with pytest.raises(ConfigError):
         load_service(p)
+
+
+def test_cli_webcam_uses_webcam_config(tmp_path, monkeypatch):
+    import ywhob.main as cli
+
+    monkeypatch.chdir(ROOT)  # 기본 설정 경로는 저장소 루트 기준
+    model = tmp_path / "m.pt"
+    model.write_bytes(b"")
+    seen = {}
+
+    class FakePipeline:
+        def __init__(self, service, cameras):
+            seen["cameras"] = cameras
+
+        def run(self):
+            pass
+
+    monkeypatch.setattr(cli, "Pipeline", FakePipeline)
+    main(["--service", str(SERVICE), "--webcam", "1", "--model", str(model)])
+    cams = seen["cameras"]
+    assert [c.url for c in cams] == ["webcam:1"]
+    assert cams[0].zones[0].zone_id == "webcam_all"
+
+
+def test_webcam_config_loads():
+    cams = load_cameras(ROOT / "configs" / "cameras.webcam.yaml")
+    assert cams[0].url == "webcam:0"
+
+
+def test_invalid_webcam_url_rejected(tmp_path):
+    p = tmp_path / "c.yaml"
+    p.write_text(
+        "cameras:\n  - id: w\n    url: webcam:abc\n    zones:\n"
+        "      - {zone_id: z, roi: [[0,0],[1,0],[1,1]], capacity: 1}\n",
+        encoding="utf-8",
+    )
+    with pytest.raises(ConfigError):
+        load_cameras(p)
+
+
+def test_cli_live_runs_preview_instead_of_pipeline(tmp_path, monkeypatch):
+    import ywhob.main as cli
+
+    monkeypatch.chdir(ROOT)
+    model = tmp_path / "m.pt"
+    model.write_bytes(b"")
+    seen = {}
+    monkeypatch.setattr(cli, "run_live", lambda service, camera: seen.setdefault("camera", camera))
+    monkeypatch.setattr(cli, "Pipeline", None)  # 호출되면 실패
+    main(["--service", str(SERVICE), "--webcam", "--live", "--model", str(model)])
+    assert seen["camera"].url == "webcam:0"
+
+
+def test_cli_live_rejects_multiple_cameras(tmp_path):
+    p = tmp_path / "c.yaml"
+    zone = "      - {zone_id: %s, roi: [[0,0],[1,0],[1,1]], capacity: 1}\n"
+    p.write_text(
+        "cameras:\n"
+        "  - id: a\n    url: webcam:0\n    zones:\n" + zone % "z1"
+        + "  - id: b\n    url: webcam:1\n    zones:\n" + zone % "z2",
+        encoding="utf-8",
+    )
+    with pytest.raises(SystemExit):
+        main(["--service", str(SERVICE), "--cameras", str(p), "--live"])

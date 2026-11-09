@@ -1,6 +1,6 @@
 """카메라 수신과 5장 캡처 (spec 5.1).
 
-- CameraStream: RTSP(또는 동영상 파일)를 백그라운드 스레드에서 계속 읽어 최신 프레임 하나만 유지.
+- CameraStream: RTSP(또는 동영상 파일, 테스트용 웹캠 webcam:N)를 백그라운드 스레드에서 계속 읽어 최신 프레임 하나만 유지.
   끊기면 1초부터 두 배씩 reconnect_max_backoff까지 늘려 가며 재연결
 - capture_burst: window_seconds 동안 frames장을 균등 간격(0, 0.75, ... 3.0초)으로 수집.
   같은 프레임이 두 번 들어가거나 오래된 프레임이 섞이지 않게 한다 (끊긴 스트림이 정상 5장처럼 보이는 것 방지)
@@ -24,11 +24,15 @@ from .config import CameraConfig, CaptureConfig
 
 log = logging.getLogger(__name__)
 
-_LIVE_SCHEMES = ("rtsp://", "rtsps://", "http://", "https://")
+WEBCAM_SCHEME = "webcam:"  # webcam:N → PC에 연결된 N번 카메라 (테스트용)
+_LIVE_SCHEMES = ("rtsp://", "rtsps://", "http://", "https://", WEBCAM_SCHEME)
 
 
 def open_video(url: str, cfg: CaptureConfig) -> cv2.VideoCapture:
-    """FFmpeg 백엔드로 연다. RTSP 전송 방식은 FFmpeg 옵션 환경변수로만 줄 수 있어 열기 전에 설정한다."""
+    """FFmpeg 백엔드로 연다. RTSP 전송 방식은 FFmpeg 옵션 환경변수로만 줄 수 있어 열기 전에 설정한다.
+    webcam:N은 OpenCV 기본 백엔드로 장치 번호를 연다."""
+    if url.lower().startswith(WEBCAM_SCHEME):
+        return cv2.VideoCapture(int(url[len(WEBCAM_SCHEME):]))
     os.environ["OPENCV_FFMPEG_CAPTURE_OPTIONS"] = f"rtsp_transport;{cfg.rtsp_transport}"
     params = [
         cv2.CAP_PROP_OPEN_TIMEOUT_MSEC, int(cfg.open_timeout * 1000),
