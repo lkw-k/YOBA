@@ -1,8 +1,8 @@
 import numpy as np
 import pytest
 
-from ywhob.config import DetectorConfig
-from ywhob.detect import YoloDetector
+from yoba.config import DetectorConfig
+from yoba.detect import YoloDetector
 
 
 class _T:

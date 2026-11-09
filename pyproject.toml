@@ -1,5 +1,5 @@
 [project]
-name = "ywhob"
+name = "yoba"
 version = "0.1.0"
 description = "축전 CCTV 혼잡도 측정 시스템"
 readme = "README.md"
@@ -26,7 +26,7 @@ train = [
 ]
 
 [project.scripts]
-ywhob = "ywhob.main:main"
+yoba = "yoba.main:main"
 
 [dependency-groups]
 dev = [
@@ -49,7 +49,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
-packages = ["ywhob"]
+packages = ["yoba"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

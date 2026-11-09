@@ -1,8 +1,8 @@
 import numpy as np
 import pytest
 
-from ywhob.aggregate import HIGH, LOW, MEDIUM, ZoneAssigner, ZoneTracker, classify_confidence, median_frame_index
-from ywhob.config import AggregateConfig, ZoneConfig
+from yoba.aggregate import HIGH, LOW, MEDIUM, ZoneAssigner, ZoneTracker, classify_confidence, median_frame_index
+from yoba.config import AggregateConfig, ZoneConfig
 
 LEFT = ZoneConfig("left", ((0, 0), (100, 0), (100, 100), (0, 100)), 10)
 RIGHT = ZoneConfig("right", ((100, 0), (200, 0), (200, 100), (100, 100)), 10)

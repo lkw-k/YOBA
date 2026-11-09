@@ -1,4 +1,4 @@
-# 웹캠 테스트용 카메라 설정. `uv run ywhob --webcam [번호]`가 이 파일을 쓴다.
+# 웹캠 테스트용 카메라 설정. `uv run yoba --webcam [번호]`가 이 파일을 쓴다.
 # url의 webcam:N은 PC에 연결된 N번 카메라 (노트북 내장 0, USB 웹캠 보통 1).
 # --webcam 번호를 주면 url의 번호를 그 값으로 바꿔 쓴다.
 #

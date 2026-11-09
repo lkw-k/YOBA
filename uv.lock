@@ -1599,7 +1599,7 @@ wheels = [
 ]
 
 [[package]]
-name = "ywhob"
+name = "yoba"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [

@@ -134,35 +134,35 @@ def _make_runs(tmp_path, runs: dict):
 
 
 def test_resume_picks_unfinished_run(tmp_path):
-    load = _make_runs(tmp_path, {"yolo26s-ywhob": {"last.pt": FINISHED}, "yolo26s-ywhob2": {"last.pt": RUNNING}})
-    assert tr.find_resumable(tmp_path, "yolo26s-ywhob", load) == tmp_path / "yolo26s-ywhob2" / "weights" / "last.pt"
+    load = _make_runs(tmp_path, {"yolo26s-yoba": {"last.pt": FINISHED}, "yolo26s-yoba2": {"last.pt": RUNNING}})
+    assert tr.find_resumable(tmp_path, "yolo26s-yoba", load) == tmp_path / "yolo26s-yoba2" / "weights" / "last.pt"
 
 
 def test_resume_skips_finished_run_even_if_stale_backup_exists(tmp_path):
-    load = _make_runs(tmp_path, {"yolo26s-ywhob": {tr.BACKUP_NAME: RUNNING, "last.pt": FINISHED}})
-    assert tr.find_resumable(tmp_path, "yolo26s-ywhob", load) is None
+    load = _make_runs(tmp_path, {"yolo26s-yoba": {tr.BACKUP_NAME: RUNNING, "last.pt": FINISHED}})
+    assert tr.find_resumable(tmp_path, "yolo26s-yoba", load) is None
 
 
 def test_resume_falls_back_to_backup_when_last_is_broken(tmp_path):
-    load = _make_runs(tmp_path, {"yolo26s-ywhob": {tr.BACKUP_NAME: RUNNING, "last.pt": "broken"}})
-    assert tr.find_resumable(tmp_path, "yolo26s-ywhob", load) == tmp_path / "yolo26s-ywhob" / "weights" / tr.BACKUP_NAME
+    load = _make_runs(tmp_path, {"yolo26s-yoba": {tr.BACKUP_NAME: RUNNING, "last.pt": "broken"}})
+    assert tr.find_resumable(tmp_path, "yolo26s-yoba", load) == tmp_path / "yolo26s-yoba" / "weights" / tr.BACKUP_NAME
 
 
 def test_resume_ignores_other_run_names_and_final_epoch(tmp_path):
     done = {"epoch": 49, "optimizer": {}, "train_args": {"epochs": 50}}  # 마지막 에폭까지 저장됨 → 이어갈 게 없음
-    load = _make_runs(tmp_path, {"timing": {"last.pt": RUNNING}, "yolo26s-ywhob": {"last.pt": done}})
-    assert tr.find_resumable(tmp_path, "yolo26s-ywhob", load) is None
-    assert tr.find_resumable(tmp_path / "nothing", "yolo26s-ywhob", load) is None
+    load = _make_runs(tmp_path, {"timing": {"last.pt": RUNNING}, "yolo26s-yoba": {"last.pt": done}})
+    assert tr.find_resumable(tmp_path, "yolo26s-yoba", load) is None
+    assert tr.find_resumable(tmp_path / "nothing", "yolo26s-yoba", load) is None
 
 
 def test_abandoned_older_run_is_not_resumed_after_newer_run_finishes(tmp_path):
-    # 중단된 ywhob을 --new로 버리고 ywhob2를 끝까지 돌린 뒤 → 새 학습을 시작해야 한다
-    load = _make_runs(tmp_path, {"yolo26s-ywhob": {"last.pt": RUNNING}, "yolo26s-ywhob2": {"last.pt": FINISHED}})
-    assert tr.find_resumable(tmp_path, "yolo26s-ywhob", load) is None
+    # 중단된 yoba을 --new로 버리고 yoba2를 끝까지 돌린 뒤 → 새 학습을 시작해야 한다
+    load = _make_runs(tmp_path, {"yolo26s-yoba": {"last.pt": RUNNING}, "yolo26s-yoba2": {"last.pt": FINISHED}})
+    assert tr.find_resumable(tmp_path, "yolo26s-yoba", load) is None
 
 
 def test_resume_refuses_training_options_it_would_ignore():
-    ckpt = Path("runs/yolo26s-ywhob/weights/last.pt")
+    ckpt = Path("runs/yolo26s-yoba/weights/last.pt")
     with pytest.raises(SystemExit, match="--epochs, --fraction"):
         tr.check_resume_overrides(ckpt, {"epochs": 3, "fraction": 0.1, "batch": None, "imgsz": None, "name": None})
     tr.check_resume_overrides(ckpt, {"epochs": None, "fraction": None, "batch": None, "imgsz": None, "name": "x"})

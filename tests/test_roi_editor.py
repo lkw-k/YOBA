@@ -3,7 +3,7 @@ from pathlib import Path
 
 import numpy as np
 
-from ywhob.config import load_cameras
+from yoba.config import load_cameras
 
 ROOT = Path(__file__).resolve().parents[1]
 spec = importlib.util.spec_from_file_location("roi_editor", ROOT / "scripts" / "roi_editor.py")

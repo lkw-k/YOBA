@@ -1,6 +1,6 @@
 """Redis 전송 (spec 5.8, 9).
 
-- 이미지(ywhob:img:{zone_id}, TTL)를 먼저, 구역 JSON(ywhob:zone:{zone_id})을 나중에 쓴다 (한 트랜잭션, 순서 유지)
+- 이미지(yoba:img:{zone_id}, TTL)를 먼저, 구역 JSON(yoba:zone:{zone_id})을 나중에 쓴다 (한 트랜잭션, 순서 유지)
 - image_url에 ?v={unix_ts} 버전 쿼리
 - low: 직전 값을 confidence low로, updated_at 유지 / error: status error
 - Redis 장애는 로그만 남기고 False. 쌓아 두지 않고 다음 주기에 최신 값을 다시 쓴다

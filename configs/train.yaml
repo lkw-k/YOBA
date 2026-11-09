@@ -23,4 +23,4 @@ flipud: 0.0          # CCTV 시점 고정이라 상하 반전 금지
 hsv_v: 0.4           # 실내 조명 변화
 
 project: runs
-name: yolo26s-ywhob
+name: yolo26s-yoba

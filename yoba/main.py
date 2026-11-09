@@ -1,7 +1,7 @@
-"""실행 진입점: `uv run ywhob --cameras configs/cameras.yaml [--model s|n]`
+"""실행 진입점: `uv run yoba --cameras configs/cameras.yaml [--model s|n]`
 
-웹캠 테스트: `uv run ywhob --webcam [번호]` (configs/cameras.webcam.yaml, 화면 전체를 한 구역으로)
-실시간 미리보기: `uv run ywhob --webcam --live` (매 프레임 처리해 PC 창에 띄움, Redis 전송 없음)
+웹캠 테스트: `uv run yoba --webcam [번호]` (configs/cameras.webcam.yaml, 화면 전체를 한 구역으로)
+실시간 미리보기: `uv run yoba --webcam --live` (매 프레임 처리해 PC 창에 띄움, Redis 전송 없음)
 """
 
 from __future__ import annotations
@@ -19,7 +19,7 @@ from .pipeline import Pipeline
 
 
 def main(argv: list[str] | None = None) -> None:
-    ap = argparse.ArgumentParser(prog="ywhob", description="CCTV 혼잡도 측정 파이프라인")
+    ap = argparse.ArgumentParser(prog="yoba", description="CCTV 혼잡도 측정 파이프라인")
     ap.add_argument("--service", default="configs/service.yaml")
     ap.add_argument("--cameras", help="카메라 설정. 기본 configs/cameras.yaml, --webcam이면 configs/cameras.webcam.yaml")
     ap.add_argument("--webcam", type=int, nargs="?", const=0, metavar="번호",

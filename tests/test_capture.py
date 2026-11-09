@@ -5,8 +5,8 @@ import time
 import cv2
 import numpy as np
 
-from ywhob.capture import CameraStream, capture_burst
-from ywhob.config import CameraConfig, CaptureConfig, ZoneConfig
+from yoba.capture import CameraStream, capture_burst
+from yoba.config import CameraConfig, CaptureConfig, ZoneConfig
 
 ZONE = ZoneConfig("z1", ((0, 0), (1, 0), (1, 1)), 10)
 URL = "rtsp://admin:secret@10.0.0.1:554/stream1"
@@ -203,7 +203,7 @@ def test_real_video_file_with_ffmpeg_opener(tmp_path):
 
 
 def test_url_not_logged(caplog):
-    caplog.set_level(logging.DEBUG, logger="ywhob.capture")
+    caplog.set_level(logging.DEBUG, logger="yoba.capture")
     stream = CameraStream(_camera(), FAST, opener=Opener(FakeCapture(opened=False)))
     _run(stream, lambda: capture_burst(stream, FAST))
     assert caplog.records
@@ -211,7 +211,7 @@ def test_url_not_logged(caplog):
 
 
 def test_open_video_webcam_uses_device_index(monkeypatch):
-    import ywhob.capture as capture
+    import yoba.capture as capture
 
     calls = []
     monkeypatch.setattr(capture.cv2, "VideoCapture", lambda *a, **k: calls.append(a) or FakeCapture())
