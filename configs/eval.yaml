@@ -1,0 +1,12 @@
+# 거리별 recall 평가 설정 (spec 3.7). scripts/evaluate_count.py가 읽는다.
+# 검출 신뢰도 임계값과 max_det은 서비스와 같은 값을 쓰도록 configs/service.yaml의 detector에서 읽는다.
+
+imgsz: [960, 1280]        # 추론 입력 해상도마다 따로 측정 (spec 3.7)
+iou: 0.5                  # 검출 박스와 GT visible box가 이 이상 겹치면 검출 성공
+recall_target: 0.7        # 이 recall 아래로 떨어지는 높이를 최소 검출 크기로 본다 (잠정)
+min_samples: 50           # 구간의 GT가 이보다 적으면 최소 검출 크기 판정에서 뺀다
+min_visibility: 0.75      # 최소 검출 크기는 visible/full 면적비가 이 이상인 사람으로만 정한다.
+                          # CrowdHuman은 가림이 심해 전체로 재면 거리 효과와 가림 효과가 섞인다 (잠정)
+
+# GT full box 높이 구간 (추론 입력 해상도 기준 px). 마지막 값 이상은 한 구간으로 묶는다.
+height_bins: [0, 8, 12, 16, 20, 24, 32, 40, 48, 64, 96, 128, 192, 256]

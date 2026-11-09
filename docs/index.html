@@ -1,0 +1,227 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>YwHob | CCTV 기반 박람회 혼잡도 분석</title>
+<meta name="description" content="2026 AI 미래교육 박람회 홈페이지에서 3,000+명에게 실시간 혼잡도를 제공한 CCTV 분석 시스템">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f7f8fa; --surface:#ffffff; --text:#14171c; --muted:#5b6472; --line:#e3e6eb;
+  --accent:#1f6feb; --accent-soft:#e8f0fe; --good:#1a7f37;
+}
+@media (prefers-color-scheme: dark){
+  :root{ --bg:#0f1216; --surface:#171b21; --text:#e8ebef; --muted:#9aa4b2; --line:#2a313b;
+         --accent:#5b9dff; --accent-soft:#1a2740; --good:#3fb950; }
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--text);font-family:"Noto Sans KR",system-ui,sans-serif;line-height:1.7;-webkit-font-smoothing:antialiased}
+a{color:var(--accent)}
+.wrap{max-width:1040px;margin:0 auto;padding:0 20px}
+header.hero{padding:72px 0 48px;border-bottom:1px solid var(--line);background:var(--surface)}
+.eyebrow{display:inline-block;font-size:13px;font-weight:700;color:var(--accent);background:var(--accent-soft);padding:4px 10px;border-radius:999px;margin-bottom:16px}
+h1{font-size:clamp(28px,5vw,44px);line-height:1.25;margin:0 0 16px;font-weight:900;letter-spacing:-.02em}
+.lead{font-size:clamp(16px,2.2vw,19px);color:var(--muted);margin:0 0 28px;max-width:760px}
+.links{display:flex;flex-wrap:wrap;gap:10px}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:10px 16px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--text);text-decoration:none;font-weight:500;font-size:15px}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+nav.toc{position:sticky;top:0;z-index:5;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+nav.toc .wrap{display:flex;gap:18px;overflow-x:auto;padding-top:12px;padding-bottom:12px;white-space:nowrap}
+nav.toc a{color:var(--muted);text-decoration:none;font-size:14px;font-weight:500}
+nav.toc a:hover{color:var(--text)}
+section{padding:56px 0;border-bottom:1px solid var(--line)}
+h2{font-size:clamp(22px,3.4vw,30px);margin:0 0 8px;font-weight:800;letter-spacing:-.01em}
+h3{font-size:19px;margin:32px 0 10px}
+.sub{color:var(--muted);margin:0 0 24px}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-top:8px}
+.stat{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:20px}
+.stat .num{font-size:34px;font-weight:900;color:var(--accent);line-height:1.1;letter-spacing:-.02em}
+.stat .label{font-weight:700;margin-top:6px}
+.stat .desc{color:var(--muted);font-size:14px;margin-top:2px}
+.table-wrap{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-radius:12px;margin:12px 0}
+table{border-collapse:collapse;width:100%;font-size:15px;min-width:520px}
+th,td{padding:10px 14px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-weight:700;background:var(--bg);white-space:nowrap}
+tr:last-child td{border-bottom:0}
+td.hl{font-weight:800;color:var(--accent)}
+.note{background:var(--accent-soft);border-left:4px solid var(--accent);border-radius:8px;padding:12px 16px;margin:16px 0;font-size:15px}
+.note.cond{background:var(--surface);border-left-color:var(--muted);color:var(--muted)}
+figure{margin:16px 0;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px}
+figure img{width:100%;height:auto;display:block;border-radius:8px}
+figcaption{color:var(--muted);font-size:14px;margin-top:8px}
+.flow{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:8px 0 20px}
+.flow span{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:8px 12px;font-weight:500;font-size:15px}
+.flow i{color:var(--muted);font-style:normal}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:20px}
+.card h4{margin:0 0 6px;font-size:16px}
+.card p{margin:0;color:var(--muted);font-size:15px}
+ul{padding-left:20px}
+footer{padding:40px 0 60px;color:var(--muted);font-size:14px}
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="wrap">
+    <span class="eyebrow">2026 AI 미래교육 박람회 실사용</span>
+    <h1>YwHob: CCTV 기반<br>박람회 혼잡도 분석 시스템</h1>
+    <p class="lead">현장 CCTV 영상에서 사람을 검출하여 구역별 혼잡도를 계산하고, 사람을 블러 처리한 현장 이미지와 함께 박람회 홈페이지에 실시간으로 제공하였습니다.</p>
+    <div class="links">
+      <a class="btn primary" href="https://github.com/lkw-k/YwHob">GitHub 저장소</a>
+      <a class="btn" href="https://huggingface.co/illimax/YolPe">Hugging Face 모델 (YolPe)</a>
+      <a class="btn" href="https://github.com/lkw-k/YolPe">학습 코드</a>
+    </div>
+  </div>
+</header>
+
+<nav class="toc" aria-label="목차">
+  <div class="wrap">
+    <a href="#result">운영 결과</a>
+    <a href="#structure">시스템 구조</a>
+    <a href="#model">검출 모델</a>
+    <a href="#performance">성능 평가</a>
+    <a href="#privacy">개인정보 보호</a>
+    <a href="#limits">한계</a>
+  </div>
+</nav>
+
+<main>
+<section id="result">
+  <div class="wrap">
+    <h2>운영 결과</h2>
+    <p class="sub">2026-10-31 ~ 2026-11-01, 박람회 홈페이지 실시간 혼잡도 서비스</p>
+    <div class="stats">
+      <div class="stat"><div class="num">3,000+</div><div class="label">서비스 대상</div><div class="desc">방문객, 부스 운영진, 행사 관리진</div></div>
+      <div class="stat"><div class="num">10초</div><div class="label">갱신 주기</div><div class="desc">CCTV 1대당, 주기마다 프레임 5장 캡처</div></div>
+      <div class="stat"><div class="num">1대</div><div class="label">실행 환경</div><div class="desc">노트북 1대로 여러 대의 CCTV 처리</div></div>
+      <div class="stat"><div class="num">0회</div><div class="label">서비스 중단</div><div class="desc">운영 기간 동안 중단 없이 제공</div></div>
+    </div>
+    <div class="table-wrap"><table>
+      <tr><th>CCTV 영상 해상도</th><td>가로 640픽셀</td></tr>
+      <tr><th>개인정보 보호</th><td>원본 영상은 저장하거나 전송하지 않으며, 블러 처리한 이미지만 외부에 제공</td></tr>
+      <tr><th>담당 범위</th><td>영상 수신 → 캡처 → 인원 추정 → 혼잡도 산출 → 블러 처리 → 웹 서버 전달</td></tr>
+    </table></div>
+  </div>
+</section>
+
+<section id="structure">
+  <div class="wrap">
+    <h2>시스템 구조</h2>
+    <p class="sub">실시간 스트림 대신 10초 주기 배치 처리로 노트북 1대에서 여러 CCTV를 처리합니다.</p>
+    <div class="flow">
+      <span>CCTV ×N (RTSP)</span><i>→</i><span>캡처 (3초간 5장)</span><i>→</i><span>사람 검출 (YolPe)</span><i>→</i><span>구역 집계 (발 위치 → ROI)</span><i>→</i><span>혼잡도 판정 (중앙값 · EMA · 히스테리시스)</span><i>→</i><span>Redis</span><i>→</i><span>웹 서버</span>
+    </div>
+    <div class="grid2">
+      <div class="card"><h4>중앙값 집계</h4><p>프레임 5장의 인원 중 중앙값을 사용하여 일시적인 가림과 오검출의 영향을 줄입니다.</p></div>
+      <div class="card"><h4>신뢰도</h4><p>5장 사이의 인원 편차가 크면 해당 주기의 결과를 버리고 직전 값을 유지합니다.</p></div>
+      <div class="card"><h4>EMA 스무딩</h4><p>최근 3~5주기의 결과를 지수이동평균으로 반영합니다.</p></div>
+      <div class="card"><h4>히스테리시스 판정</h4><p>상승·하강 임계값을 분리하여 경계 부근에서 단계가 반복적으로 바뀌는 현상을 막습니다.</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="model">
+  <div class="wrap">
+    <h2>검출 모델: YolPe</h2>
+    <p class="sub">YOLO26s를 군중 데이터셋 CrowdHuman으로 파인튜닝한 사람(<code>person</code>) 1개 클래스 검출 모델</p>
+    <div class="stats">
+      <div class="stat"><div class="num">3.5배</div><div class="label">원거리 인식률 향상</div><div class="desc">22.5% → 79.8% (박스 높이 48px 미만)</div></div>
+      <div class="stat"><div class="num">5.3배</div><div class="label">더 작은 사람까지 인식</div><div class="desc">최소 인식 크기 128px → 24px</div></div>
+      <div class="stat"><div class="num">4배</div><div class="label">현장 검출 인원</div><div class="desc">같은 크기 기본 YOLO26s 1명 → 4명</div></div>
+      <div class="stat"><div class="num">6.7배</div><div class="label">더 빠른 속도</div><div class="desc">같은 결과를 낸 YOLO26x 대비</div></div>
+    </div>
+    <h3>파인튜닝이 필요한 이유</h3>
+    <ul>
+      <li>CCTV는 높은 위치에서 넓은 범위를 촬영하므로, 멀리 있는 사람은 화면에서 수십 픽셀 크기로 작게 보입니다.</li>
+      <li>COCO로 학습된 기본 모델은 이러한 작은 사람을 많이 놓치며, 그 결과 인원이 실제보다 적게 계산됩니다.</li>
+      <li>머리만 검출하는 방식은 원거리에서 검출이 어렵고 둥근 물체를 오검출하여, <code>person</code> 1개 클래스 방식을 채택하였습니다.</li>
+    </ul>
+  </div>
+</section>
+
+<section id="performance">
+  <div class="wrap">
+    <h2>성능 평가</h2>
+
+    <h3>1. 거리별 인식률: 기본 YOLO26s vs YolPe</h3>
+    <div class="note cond">측정 조건: CrowdHuman 검증 데이터(입력 크기 1280, conf 0.35), 몸의 75% 이상이 보이는 사람 48,204명 기준 recall</div>
+    <div class="table-wrap"><table>
+      <tr><th>거리</th><th>박스 높이</th><th>사람 수</th><th>기본 YOLO26s</th><th>YolPe</th><th>배수</th></tr>
+      <tr><td>원거리</td><td>48px 미만</td><td>5,535</td><td>0.225</td><td class="hl">0.798</td><td class="hl">3.5배</td></tr>
+      <tr><td>중거리</td><td>48~128px</td><td>14,966</td><td>0.559</td><td class="hl">0.930</td><td class="hl">1.7배</td></tr>
+      <tr><td>근거리</td><td>128px 이상</td><td>27,703</td><td>0.852</td><td class="hl">0.969</td><td class="hl">1.1배</td></tr>
+      <tr><td>전체</td><td></td><td>48,204</td><td>0.689</td><td class="hl">0.938</td><td class="hl">1.4배</td></tr>
+      <tr><td>최소 인식 크기</td><td>인식률 0.7 이상</td><td></td><td>128px</td><td class="hl">24px</td><td class="hl">5.3배 작은 사람까지</td></tr>
+    </table></div>
+
+    <h3>2. 현장 영상 비교: YOLO26 모델 크기별</h3>
+    <figure>
+      <img src="images/model_size_comparison.png" alt="YolPe와 YOLO26 n/s/l/x 모델의 현장 영상 검출 비교" loading="lazy">
+      <figcaption>현장 CCTV 영상 한 장면에서의 검출 결과. CPU Intel Core Ultra 7 155H (GPU 없음), 입력 크기 640, conf 0.25, 15초 연속 처리 2회 평균</figcaption>
+    </figure>
+    <div class="table-wrap"><table>
+      <tr><th>모델</th><th>파라미터 수</th><th>검출 인원</th><th>처리 시간</th><th>처리 속도</th><th>메모리</th></tr>
+      <tr><td><b>YolPe (custom)</b></td><td>9.9M</td><td class="hl">4명</td><td>152ms</td><td>6.7fps</td><td>495MB</td></tr>
+      <tr><td>YOLO26n</td><td>2.6M</td><td>1명</td><td>80ms</td><td>12.6fps</td><td>399MB</td></tr>
+      <tr><td>YOLO26s</td><td>10.0M</td><td>1명</td><td>152ms</td><td>6.8fps</td><td>484MB</td></tr>
+      <tr><td>YOLO26l</td><td>26.3M</td><td>4명</td><td>702ms</td><td>1.6fps</td><td>673MB</td></tr>
+      <tr><td>YOLO26x</td><td>59.0M</td><td>4명</td><td>1020ms</td><td>1.0fps</td><td>968MB</td></tr>
+    </table></div>
+    <div class="note"><b>핵심 성과</b>: 같은 크기의 기본 YOLO26s보다 <b>4배 많은 사람</b>을 같은 속도로 검출하였습니다. 가장 큰 YOLO26x와 같은 수의 사람을 <b>약 6.7배 빠른 속도</b>, <b>약 6.0배 적은 파라미터</b>로 검출하였습니다.</div>
+
+    <h3>3. 오탐률 및 미검출률 (오분류표)</h3>
+    <div class="note cond">현장 실측이 아닌 <b>CrowdHuman 검증 데이터셋 기준</b>입니다. best.pt(37 에폭), 이미지 4,370장, 정답 사람 99,481명</div>
+    <div class="table-wrap"><table>
+      <tr><th>예측 \ 정답</th><th>person (사람)</th><th>background (사람 아님)</th></tr>
+      <tr><th>person (사람으로 검출)</th><td class="hl">90,936 (올바른 검출, TP)</td><td>10,132 (오탐, FP)</td></tr>
+      <tr><th>background (검출 안 됨)</th><td>8,545 (미검출, FN)</td><td>-</td></tr>
+    </table></div>
+    <div class="stats">
+      <div class="stat"><div class="num">91.4%</div><div class="label">재현율 (Recall)</div><div class="desc">실제 사람 100명 중 약 91명 검출</div></div>
+      <div class="stat"><div class="num">90.0%</div><div class="label">정밀도 (Precision)</div><div class="desc">검출 100개 중 약 90개가 실제 사람</div></div>
+      <div class="stat"><div class="num">약 10.0%</div><div class="label">오탐률</div><div class="desc">10,132 / 101,068</div></div>
+      <div class="stat"><div class="num">약 8.6%</div><div class="label">미검출률</div><div class="desc">8,545 / 99,481</div></div>
+    </div>
+  </div>
+</section>
+
+<section id="privacy">
+  <div class="wrap">
+    <h2>개인정보 보호</h2>
+    <ul>
+      <li>원본 프레임은 디스크, 로그, 네트워크 어디에도 남기지 않으며, 블러 처리 후 메모리에서 즉시 삭제합니다.</li>
+      <li>사람 박스를 긴 변 16픽셀로 축소한 뒤 다시 확대하여, 얼굴이 약 2픽셀 크기로 줄어들어 복원할 수 없게 합니다.</li>
+      <li>블러 후 박스별 선명도를 검사하여, <b>통과하지 못하면 이미지는 전송하지 않고 혼잡도 수치만 전송</b>합니다.</li>
+    </ul>
+    <h3>블러 방식 비교</h3>
+    <figure>
+      <img src="images/blur_method_comparison.png" alt="사람 박스 크기별 블러 방식 비교: 축소→확대(채택), 모자이크, 축소+가우시안, 가우시안" loading="lazy">
+      <figcaption>사람 박스 높이 108px, 71px, 60px, 53px 사례에 4가지 방식을 적용한 결과. "축소→확대" 방식을 채택하였습니다.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<section id="limits">
+  <div class="wrap">
+    <h2>한계</h2>
+    <ul>
+      <li>많이 가려진 사람은 검출하지 못할 수 있어, 밀집된 군중에서는 인원이 실제보다 적게 계산될 수 있습니다.</li>
+      <li>16픽셀보다 작은 사람은 대부분 검출하지 못합니다.</li>
+      <li>포스터 속 인물이나 마네킹처럼 사람과 비슷한 물체를 사람으로 검출할 수 있습니다.</li>
+    </ul>
+  </div>
+</section>
+</main>
+
+<footer>
+  <div class="wrap">
+    모델 가중치는 AGPL-3.0(Ultralytics YOLO26)을 따르며, 학습 데이터 CrowdHuman은 비상업적 연구 목적으로만 사용할 수 있습니다.<br>
+    자세한 설계와 실행 방법은 <a href="https://github.com/lkw-k/YwHob">GitHub 저장소 README</a>를 참고하십시오.
+  </div>
+</footer>
+</body>
+</html>

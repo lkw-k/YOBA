@@ -1,0 +1,47 @@
+# 서비스 설정. (잠정) 값의 근거는 spec.md 참고.
+
+cycle_seconds: 10            # 측정 주기 (확정: 박람회 운영 기준)
+queue_size: 4                # 단계 간 큐 크기. 가득 차면 가장 오래된 주기를 버림 (spec 6)
+
+capture:                     # spec 5.1
+  frames: 5                  # 주기당 샘플 수 (확정)
+  window_seconds: 3.0        # 샘플링 구간 (확정)
+  min_frames: 3              # 이보다 적으면 주기를 error 처리
+  reconnect_max_backoff: 30  # 재연결 최대 대기(초)
+  rtsp_transport: tcp        # CCTV RTSP 전송 방식. udp는 패킷 손실 시 화면이 깨짐 (잠정)
+  open_timeout: 10           # RTSP 연결 대기(초). 넘으면 재연결 (잠정)
+  read_timeout: 10           # 프레임 수신 대기(초). CCTV/NVR이 멈추면 이 시간 뒤 재연결 (잠정)
+
+detector:                    # spec 5.2
+  model: s                   # 아래 models의 별칭 또는 가중치 경로. 실행 시 --model n 처럼 바꿀 수 있음
+  models:                    # 파인튜닝 모델 (CrowdHuman, imgsz 1280). 파일은 git 제외, models/README.md 참고
+    s: models/yolo26s-ywhob-v1.pt   # 스몰: 정확도 우선 (기본)
+    n: models/yolo26n-ywhob-v1.pt   # 나노: 속도 우선. GPU가 없거나 카메라가 많을 때
+  imgsz: 1280
+  person_conf: 0.35          # (잠정)
+  max_det: 1000
+  device: null               # null이면 자동 선택. 예: 0 (GPU), cpu
+
+aggregate:                   # spec 5.4 ~ 5.6
+  confidence:
+    high:   {abs: 2, rel: 0.2}    # (max - min) <= max(abs, rel * median)
+    medium: {abs: 4, rel: 0.5}
+  ema_alpha: 0.4             # (잠정)
+  up:   [0.45, 0.75]         # 0→1, 1→2 상승 임계값 (잠정)
+  down: [0.35, 0.65]         # 1→0, 2→1 하강 임계값 (잠정)
+  confirm_cycles: 2          # 단계 변경 확인 주기 수 (잠정)
+
+blur:                        # spec 5.7
+  box_pad: 0.1               # 사람 박스를 상하좌우로 넓히는 비율 (잠정)
+  box_long_side: 16          # 박스 영역을 이 긴 변(px)까지 축소 후 확대. 얼굴이 약 2px로 줄어듦 (잠정)
+  output_long_side: 960      # 전송 이미지 긴 변(px)
+  sharpness_max: 30.0        # 박스 블러 후 라플라시안 분산이 이 값 이하면 통과 (잠정)
+  sharpness_ratio: 0.25      # 또는 블러 전 선명도의 이 비율 이하면 통과 (잠정)
+  jpeg_quality: 80
+
+redis:                       # spec 5.8, 9
+  url: redis://localhost:6379/0
+  key_prefix: ywhob
+  image_ttl: 120
+  image_url_base: /snapshots
+  socket_timeout: 5          # Redis 응답 대기(초). 장애 시 파이프라인이 오래 멈추지 않게 (잠정)
