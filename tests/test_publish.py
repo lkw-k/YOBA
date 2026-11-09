@@ -4,8 +4,8 @@ from datetime import datetime
 import fakeredis
 import pytest
 
-from ywhob.config import RedisConfig
-from ywhob.publish import KST, Publisher
+from yoba.config import RedisConfig
+from yoba.publish import KST, Publisher
 
 T1 = datetime(2026, 9, 20, 14, 30, 0, tzinfo=KST)
 T2 = datetime(2026, 9, 20, 14, 30, 30, tzinfo=KST)
@@ -17,7 +17,7 @@ def r():
 
 
 def _zone(r, zid="hall_a"):
-    return json.loads(r.get(f"ywhob:zone:{zid}"))
+    return json.loads(r.get(f"yoba:zone:{zid}"))
 
 
 def test_publish_writes_image_and_json(r):
@@ -33,9 +33,9 @@ def test_publish_writes_image_and_json(r):
         "updated_at": "2026-09-20T14:30:00+09:00",
         "status": "ok",
     }
-    assert r.get("ywhob:img:hall_a") == b"\xff\xd8jpeg"
-    assert 0 < r.ttl("ywhob:img:hall_a") <= 120
-    assert r.smembers("ywhob:zones") == {b"hall_a"}
+    assert r.get("yoba:img:hall_a") == b"\xff\xd8jpeg"
+    assert 0 < r.ttl("yoba:img:hall_a") <= 120
+    assert r.smembers("yoba:zones") == {b"hall_a"}
 
 
 def test_image_written_before_json(r):
@@ -55,13 +55,13 @@ def test_image_written_before_json(r):
 
     r.pipeline = spy
     Publisher(r, RedisConfig()).publish("hall_a", 1, 0.5, "high", b"img", T1)
-    assert calls == ["ywhob:img:hall_a", "ywhob:zone:hall_a"]
+    assert calls == ["yoba:img:hall_a", "yoba:zone:hall_a"]
 
 
 def test_no_image_gives_null_url(r):
     Publisher(r, RedisConfig()).publish("hall_a", 0, 0.1, "medium", None, T1)
     assert _zone(r)["image_url"] is None
-    assert r.get("ywhob:img:hall_a") is None
+    assert r.get("yoba:img:hall_a") is None
 
 
 def test_low_rewrites_previous_with_old_timestamp(r):
@@ -76,7 +76,7 @@ def test_low_rewrites_previous_with_old_timestamp(r):
 
 def test_low_without_previous_writes_nothing(r):
     assert not Publisher(r, RedisConfig()).publish_low("hall_a")
-    assert r.get("ywhob:zone:hall_a") is None
+    assert r.get("yoba:zone:hall_a") is None
 
 
 def test_error_status(r):
@@ -105,4 +105,4 @@ def test_redis_down_does_not_raise():
 
 def test_heartbeat(r):
     Publisher(r, RedisConfig()).heartbeat(T1)
-    assert r.get("ywhob:heartbeat") == b"2026-09-20T14:30:00+09:00"
+    assert r.get("yoba:heartbeat") == b"2026-09-20T14:30:00+09:00"

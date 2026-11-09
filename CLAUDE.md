@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-YwHob: 박람회 CCTV를 10초마다 캡처해 구역별 혼잡도(3단계 + 연속 점수)와 블러 이미지를 Redis로 웹 서버에 넘기는 시스템.
+YOBA: 박람회 CCTV를 10초마다 캡처해 구역별 혼잡도(3단계 + 연속 점수)와 블러 이미지를 Redis로 웹 서버에 넘기는 시스템.
 
 ## 기준 문서
 
@@ -23,11 +23,11 @@ capture → detect → aggregate → blur → publish와 pipeline 연결까지 �
 ```bash
 uv sync --extra train --group dev   # 전체 설치 (학습 포함)
 uv run pytest -q                    # 테스트
-uv run ywhob --cameras configs/cameras.example.yaml --check   # 설정 검증
-uv run ywhob                        # 서비스 실행 (configs/cameras.yaml 필요, 스몰 모델)
-uv run ywhob --model n              # 나노 모델로 실행
-uv run ywhob --webcam [번호]         # CCTV 대신 연결된 웹캠으로 실행 (configs/cameras.webcam.yaml, 화면 전체 한 구역)
-uv run ywhob --webcam --live        # 매 프레임 처리해 블러 화면을 PC 창에 띄움 (Redis 전송 없음, q/Esc 종료)
+uv run yoba --cameras configs/cameras.example.yaml --check   # 설정 검증
+uv run yoba                         # 서비스 실행 (configs/cameras.yaml 필요, 스몰 모델)
+uv run yoba --model n               # 나노 모델로 실행
+uv run yoba --webcam [번호]          # CCTV 대신 연결된 웹캠으로 실행 (configs/cameras.webcam.yaml, 화면 전체 한 구역)
+uv run yoba --webcam --live         # 매 프레임 처리해 블러 화면을 PC 창에 띄움 (Redis 전송 없음, q/Esc 종료)
 uv run python scripts/roi_editor.py --id cam01 --url <rtsp 주소>   # CCTV 화면에 ROI 그리기
 ```
 
@@ -36,7 +36,7 @@ uv run python scripts/roi_editor.py --id cam01 --url <rtsp 주소>   # CCTV 화�
 ## 구조
 
 ```
-ywhob/      capture → detect → aggregate → blur → publish, pipeline.py가 연결 (matching.py는 보류)
+yoba/       capture → detect → aggregate → blur → publish, pipeline.py가 연결 (matching.py는 보류)
 configs/    service.yaml(주기, 임계값, Redis), cameras.example.yaml(카메라, ROI), data.yaml, train.yaml
 scripts/    데이터 변환, 학습, 평가, export, 벤치마크, ROI 편집 (spec 3~4, 7)
 models/     가중치 (git 제외, README.md에 버전 기록)
@@ -56,4 +56,4 @@ tests/
 
 - **커밋과 푸시는 사용자가 검토한 뒤에만 한다.** 요청이 없으면 변경만 하고 보고한다.
 - 문서, 주석, 로그 메시지는 한국어로 쓴다.
-- 스크립트와 `ywhob` 실행은 저장소 루트에서 한다 (`configs/`, `datasets/` 상대 경로 기준).
+- 스크립트와 `yoba` 실행은 저장소 루트에서 한다 (`configs/`, `datasets/` 상대 경로 기준).

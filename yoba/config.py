@@ -39,7 +39,7 @@ class CaptureConfig:
 
 @dataclass(frozen=True)
 class DetectorConfig:
-    model: str = "models/yolo26s-ywhob-v1.pt"
+    model: str = "models/yolo26s-yoba-v1.pt"
     imgsz: int = 1280
     person_conf: float = 0.35
     max_det: int = 1000
@@ -82,7 +82,7 @@ class BlurConfig:
 @dataclass(frozen=True)
 class RedisConfig:
     url: str = "redis://localhost:6379/0"
-    key_prefix: str = "ywhob"
+    key_prefix: str = "yoba"
     image_ttl: int = 120
     image_url_base: str = "/snapshots"
     socket_timeout: float = 5.0

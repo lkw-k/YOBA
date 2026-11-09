@@ -1,4 +1,4 @@
-"""실시간 미리보기: `uv run ywhob --webcam --live`
+"""실시간 미리보기: `uv run yoba --webcam --live`
 
 10초 주기 파이프라인과 같은 모델, 구역 집계, 블러 설정을 쓰되 매 프레임 처리해서 PC 창에 띄운다.
 - 프레임마다 검출 → 구역별 인원 → ZoneTracker(EMA, 히스테리시스)를 한 프레임 = 한 주기로 갱신
@@ -23,7 +23,7 @@ from .detect import Detector, YoloDetector
 
 log = logging.getLogger(__name__)
 
-WINDOW = "YwHob live (blurred)"
+WINDOW = "YOBA live (blurred)"
 _LEVEL_COLORS = {0: (0, 200, 0), 1: (0, 200, 255), 2: (0, 0, 255), None: (200, 200, 200)}  # BGR
 
 

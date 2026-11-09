@@ -156,7 +156,7 @@ def convert_split(split: str, src: Path, dst: Path, index: dict[str, Path], work
 def main(argv: list[str] | None = None) -> None:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--src", type=Path, default=Path("datasets/crowdhuman"), help="CrowdHuman 폴더")
-    ap.add_argument("--dst", type=Path, default=Path("datasets/ywhob"), help="configs/data.yaml의 path")
+    ap.add_argument("--dst", type=Path, default=Path("datasets/yoba"), help="configs/data.yaml의 path")
     ap.add_argument("--splits", nargs="+", default=["train", "val"])
     ap.add_argument("--workers", type=int, default=8)
     args = ap.parse_args(argv)

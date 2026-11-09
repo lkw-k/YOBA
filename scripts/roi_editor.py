@@ -25,8 +25,8 @@ import numpy as np
 import yaml
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from ywhob.capture import open_video  # noqa: E402
-from ywhob.config import load_service  # noqa: E402
+from yoba.capture import open_video  # noqa: E402
+from yoba.config import load_service  # noqa: E402
 
 ZONE_COLOR, MASK_COLOR, DRAFT_COLOR = (0, 200, 0), (0, 0, 220), (0, 220, 220)
 

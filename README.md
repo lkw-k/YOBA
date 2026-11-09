@@ -1,12 +1,16 @@
-# YwHob: CCTV 기반 박람회 혼잡도 분석 시스템
+# YOBA: CCTV 기반 박람회 혼잡도 분석 시스템
 
-YwHob은 **2026 AI 미래교육 박람회** 홈페이지에서 실시간 혼잡도 정보를 제공한 CCTV 분석 시스템입니다.
+YOBA는 **2026 AI 미래교육 박람회** 홈페이지에서 실시간 혼잡도 정보를 제공한 CCTV 분석 시스템입니다.
+
+> **이름 이야기** 👀
+> 참관객이 직접 보고 혼잡도를 확인하라는 뜻으로, "여기 봐~"를 편하게 줄여 **요바~** 라고 지었습니다.
+> 영어로는 **YOLO-based Occupancy Blurring Analyzer**의 약자이고, 슬로건은 *Yo, Be Aware!* 입니다.
 
 본 시스템은 현장 CCTV 영상에서 사람을 검출하여 구역별 혼잡도를 계산합니다. 계산한 혼잡도 수치와, 사람을 블러 처리한 현장 이미지를 박람회 홈페이지에 제공하였습니다.
 
 **담당 범위**: 영상 수신 → 캡처 → 인원 추정 → 혼잡도 산출 → 블러 처리 → 웹 서버 전달
 
-**프로젝트 소개 페이지**: https://lkw-k.github.io/YwHob/
+**프로젝트 소개 페이지**: https://lkw-k.github.io/YOBA/
 
 > **핵심 성과 요약**
 > - **3,000+명**에게 2일간(2026-10-31 ~ 11-01) **서비스 중단 없이** 실시간 혼잡도 제공
@@ -316,9 +320,9 @@ uv run python scripts/roi_editor.py        # 현장 프레임 위에 ROI를 그�
 # 3. 모델 가중치를 models/ 디렉터리에 둡니다 (Git 관리 대상 아님, 아래 표 참고)
 
 # 4. 설정을 검증한 뒤 실행합니다. Redis 주소는 configs/service.yaml의 redis.url입니다
-uv run ywhob --check
-uv run ywhob                # Small 모델 (기본값)
-uv run ywhob --model n      # Nano 모델
+uv run yoba --check
+uv run yoba                # Small 모델 (기본값)
+uv run yoba --model n      # Nano 모델
 ```
 
 ### 웹캠으로 테스트
@@ -326,10 +330,10 @@ uv run ywhob --model n      # Nano 모델
 CCTV가 없어도 PC에 연결된 웹캠으로 같은 파이프라인을 실행해 볼 수 있습니다. 카메라 설정(2번) 없이 1번과 3번만 하면 됩니다.
 
 ```bash
-uv run ywhob --webcam               # 10초 주기: 운영과 같은 흐름으로 집계 → 블러 → Redis 전송
-uv run ywhob --webcam --live        # 실시간: 매 프레임 처리해 블러 화면을 PC 창에 표시 (q 또는 Esc로 종료)
-uv run ywhob --webcam 1 --live      # 카메라 번호 지정 (노트북 내장 0, USB 웹캠은 보통 1)
-uv run ywhob --webcam --live --model n
+uv run yoba --webcam               # 10초 주기: 운영과 같은 흐름으로 집계 → 블러 → Redis 전송
+uv run yoba --webcam --live        # 실시간: 매 프레임 처리해 블러 화면을 PC 창에 표시 (q 또는 Esc로 종료)
+uv run yoba --webcam 1 --live      # 카메라 번호 지정 (노트북 내장 0, USB 웹캠은 보통 1)
+uv run yoba --webcam --live --model n
 ```
 
 | 모드 | 처리 주기 | 결과 확인 | Redis 전송 |
@@ -349,13 +353,13 @@ uv run ywhob --webcam --live --model n
 
 | 별칭 | 파일 | person mAP50 (CrowdHuman val) | 5장 추론 시간 (GPU / CPU) | 권장 상황 |
 |---|---|---|---|---|
-| `s` (기본값) | `models/yolo26s-ywhob-v1.pt` | 0.946 | 49ms / 660ms | GPU가 있는 노트북. 정확도 우선 |
-| `n` | `models/yolo26n-ywhob-v1.pt` | 0.928 | 29ms / 230ms | GPU가 없거나, 카메라가 많아 10초 주기 안에 추론이 끝나지 않는 경우 |
+| `s` (기본값) | `models/yolo26s-yoba-v1.pt` | 0.946 | 49ms / 660ms | GPU가 있는 노트북. 정확도 우선 |
+| `n` | `models/yolo26n-yoba-v1.pt` | 0.928 | 29ms / 230ms | GPU가 없거나, 카메라가 많아 10초 주기 안에 추론이 끝나지 않는 경우 |
 
 > **측정 조건**: 개발 PC(RTX 4070)에서 1920×1080 프레임 5장을 한 배치로, 입력 크기 1280으로 측정한 값입니다. 영상 디코딩 부하는 포함하지 않았습니다.
 
 - 로그에 `주기 처리 N초 (주기 10초 초과)` 경고가 반복되면 Nano 모델로 변경합니다.
-- 다른 가중치 파일은 경로로 지정할 수 있습니다: `uv run ywhob --model models/yolo26s-ywhob-v2.onnx`
+- 다른 가중치 파일은 경로로 지정할 수 있습니다: `uv run yoba --model models/yolo26s-yoba-v2.onnx`
 - 모델 별칭과 파일 경로는 `configs/service.yaml`의 `detector.models`에서 변경합니다.
 
 ### CCTV 설정 참고 사항

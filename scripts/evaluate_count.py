@@ -25,7 +25,7 @@ from pathlib import Path
 import numpy as np
 import yaml
 
-from ywhob.config import load_service
+from yoba.config import load_service
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from convert_crowdhuman import ImageAnn, index_images, parse_odgt  # noqa: E402

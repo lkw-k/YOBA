@@ -1,7 +1,7 @@
 # 학습 데이터셋 정의 (spec 3.3, 3.4). Ultralytics 형식.
-# 변환 스크립트(scripts/convert_*.py)가 datasets/ywhob 아래에 images/, labels/를 만든다.
+# 변환 스크립트(scripts/convert_*.py)가 datasets/yoba 아래에 images/, labels/를 만든다.
 
-path: datasets/ywhob
+path: datasets/yoba
 train: images/train
 val: images/val
 test: images/test

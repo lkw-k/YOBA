@@ -6,11 +6,11 @@ from datetime import datetime
 import fakeredis
 import numpy as np
 
-from ywhob import pipeline as pl
-from ywhob.config import AggregateConfig, CameraConfig, CaptureConfig, ServiceConfig, ZoneConfig
-from ywhob.detect import FrameDetections
-from ywhob.pipeline import DetectItem, Pipeline
-from ywhob.publish import KST
+from yoba import pipeline as pl
+from yoba.config import AggregateConfig, CameraConfig, CaptureConfig, ServiceConfig, ZoneConfig
+from yoba.detect import FrameDetections
+from yoba.pipeline import DetectItem, Pipeline
+from yoba.publish import KST
 
 ZONE_A = ZoneConfig("a", ((0, 0), (100, 0), (100, 100), (0, 100)), 10)
 ZONE_B = ZoneConfig("b", ((100, 0), (200, 0), (200, 100), (100, 100)), 10)
@@ -36,7 +36,7 @@ def _pipeline(cameras=(CAM1,), **service):
 
 
 def _zone(r, zid="a"):
-    return json.loads(r.get(f"ywhob:zone:{zid}"))
+    return json.loads(r.get(f"yoba:zone:{zid}"))
 
 
 def test_postprocess_publishes_zone_and_image():
@@ -46,8 +46,8 @@ def test_postprocess_publishes_zone_and_image():
     z = _zone(r)
     assert z["status"] == "ok" and z["level"] == 1 and z["score"] == 0.5 and z["confidence"] == "high"
     assert z["image_url"].startswith("/snapshots/a.jpg?v=")
-    assert r.get("ywhob:img:a")[:2] == b"\xff\xd8"
-    assert r.get("ywhob:heartbeat") is not None
+    assert r.get("yoba:img:a")[:2] == b"\xff\xd8"
+    assert r.get("yoba:heartbeat") is not None
     assert frames == []  # 원본 프레임 폐기
 
 
@@ -69,7 +69,7 @@ def test_blur_failure_sends_numbers_only(monkeypatch):
     p.postprocess(DetectItem("cam01", T, _frames(), _dets(3)))
     z = _zone(r)
     assert z["status"] == "ok" and z["image_url"] is None
-    assert r.get("ywhob:img:a") is None
+    assert r.get("yoba:img:a") is None
 
 
 def test_low_cycle_rewrites_previous():

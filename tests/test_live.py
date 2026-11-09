@@ -2,10 +2,10 @@
 
 import numpy as np
 
-from ywhob import blur
-from ywhob.config import CameraConfig, ServiceConfig, ZoneConfig
-from ywhob.detect import FrameDetections
-from ywhob.live import LiveView
+from yoba import blur
+from yoba.config import CameraConfig, ServiceConfig, ZoneConfig
+from yoba.detect import FrameDetections
+from yoba.live import LiveView
 
 ZONE = ZoneConfig("all", ((0, 0), (1280, 0), (1280, 720), (0, 720)), 2)
 CAMERA = CameraConfig("webcam", "webcam:0", (ZONE,))

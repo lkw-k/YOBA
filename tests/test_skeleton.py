@@ -5,8 +5,8 @@ from pathlib import Path
 
 import pytest
 
-from ywhob.config import ConfigError, load_cameras, load_service
-from ywhob.main import main
+from yoba.config import ConfigError, load_cameras, load_service
+from yoba.main import main
 
 ROOT = Path(__file__).resolve().parents[1]
 SERVICE = ROOT / "configs" / "service.yaml"
@@ -17,7 +17,7 @@ CAMERAS = ROOT / "configs" / "cameras.example.yaml"
     "module", ["aggregate", "blur", "capture", "detect", "matching", "pipeline", "publish"]
 )
 def test_modules_import(module):
-    importlib.import_module(f"ywhob.{module}")
+    importlib.import_module(f"yoba.{module}")
 
 
 def test_service_yaml_matches_spec():
@@ -64,8 +64,8 @@ def test_cli_check_only():
 
 def test_model_alias_resolved():
     det = load_service(SERVICE).detector
-    assert det.model == "models/yolo26s-ywhob-v1.pt"  # 기본 s
-    assert det.with_model("n").model == "models/yolo26n-ywhob-v1.pt"
+    assert det.model == "models/yolo26s-yoba-v1.pt"  # 기본 s
+    assert det.with_model("n").model == "models/yolo26n-yoba-v1.pt"
     assert det.with_model("models/other.onnx").model == "models/other.onnx"  # 별칭이 아니면 경로
 
 
@@ -97,7 +97,7 @@ def test_invalid_blur_config_rejected(tmp_path, blur):
 
 
 def test_cli_webcam_uses_webcam_config(tmp_path, monkeypatch):
-    import ywhob.main as cli
+    import yoba.main as cli
 
     monkeypatch.chdir(ROOT)  # 기본 설정 경로는 저장소 루트 기준
     model = tmp_path / "m.pt"
@@ -135,7 +135,7 @@ def test_invalid_webcam_url_rejected(tmp_path):
 
 
 def test_cli_live_runs_preview_instead_of_pipeline(tmp_path, monkeypatch):
-    import ywhob.main as cli
+    import yoba.main as cli
 
     monkeypatch.chdir(ROOT)
     model = tmp_path / "m.pt"

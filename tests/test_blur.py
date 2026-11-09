@@ -1,9 +1,9 @@
 import cv2
 import numpy as np
 
-from ywhob import blur
-from ywhob.blur import privacy_blur, sharpness
-from ywhob.config import BlurConfig
+from yoba import blur
+from yoba.blur import privacy_blur, sharpness
+from yoba.config import BlurConfig
 
 
 def _noise(h=1080, w=1920):

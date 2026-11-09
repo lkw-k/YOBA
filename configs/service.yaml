@@ -15,8 +15,8 @@ capture:                     # spec 5.1
 detector:                    # spec 5.2
   model: s                   # 아래 models의 별칭 또는 가중치 경로. 실행 시 --model n 처럼 바꿀 수 있음
   models:                    # 파인튜닝 모델 (CrowdHuman, imgsz 1280). 파일은 git 제외, models/README.md 참고
-    s: models/yolo26s-ywhob-v1.pt   # 스몰: 정확도 우선 (기본)
-    n: models/yolo26n-ywhob-v1.pt   # 나노: 속도 우선. GPU가 없거나 카메라가 많을 때
+    s: models/yolo26s-yoba-v1.pt   # 스몰: 정확도 우선 (기본)
+    n: models/yolo26n-yoba-v1.pt   # 나노: 속도 우선. GPU가 없거나 카메라가 많을 때
   imgsz: 1280
   person_conf: 0.35          # (잠정)
   max_det: 1000
@@ -41,7 +41,7 @@ blur:                        # spec 5.7
 
 redis:                       # spec 5.8, 9
   url: redis://localhost:6379/0
-  key_prefix: ywhob
+  key_prefix: yoba
   image_ttl: 120
   image_url_base: /snapshots
   socket_timeout: 5          # Redis 응답 대기(초). 장애 시 파이프라인이 오래 멈추지 않게 (잠정)
