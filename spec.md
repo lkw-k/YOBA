@@ -1,4 +1,4 @@
-# YwHob 기술 명세서 (spec.md)
+# YOBA 기술 명세서 (spec.md)
 
 README.md의 설계를 기준으로 **모델 학습부터 서비스 운영까지**의 구현 명세를 정리한다.
 
@@ -180,7 +180,7 @@ README의 선행 과제다. 원거리에서 사람을 인식할 수 있는지 �
 ### 4.2 채택 조건
 
 - 양자화 후 인원 MAPE 악화가 FP32 대비 **+2%p 이내**여야 한다. 넘으면 FP16이나 FP32를 쓴다.
-- 결과물: `models/yolo26s-ywhob-v{N}.onnx` 및 모델 카드(`models/README.md`: 데이터, 설정, 지표 기록)
+- 결과물: `models/yolo26s-yoba-v{N}.onnx` 및 모델 카드(`models/README.md`: 데이터, 설정, 지표 기록)
 
 ### 4.3 수용 카메라 수 산출
 
@@ -284,7 +284,7 @@ score: score_t = clip(s_t / capacity_zone, 0, 1)
 ### 5.8 전송
 
 - 구역마다 JSON을 Redis에 `SET`한다 (9장).
-- 이미지 바이트는 JSON에 넣지 않고 **Redis 별도 키**(`ywhob:img:{zone_id}`)에 저장한다. 웹 서버가 이 키를 읽어 `/snapshots/{zone_id}.jpg`로 제공한다 (잠정, 웹 담당과 협의).
+- 이미지 바이트는 JSON에 넣지 않고 **Redis 별도 키**(`yoba:img:{zone_id}`)에 저장한다. 웹 서버가 이 키를 읽어 `/snapshots/{zone_id}.jpg`로 제공한다 (잠정, 웹 담당과 협의).
   - 노트북과 웹 서버가 서로 다른 장비라서, 노트북 디스크에 쓴 파일은 웹 서버가 읽을 수 없다. 그래서 이미 공유하는 Redis로 이미지를 넘긴다.
   - 이미지를 먼저 쓰고 JSON을 나중에 쓴다. 그래야 JSON이 아직 없는 이미지를 가리키는 일이 없다.
 - `image_url`에 버전 쿼리(`?v={unix_ts}`)를 붙여 브라우저가 옛 이미지를 캐시에서 보여주지 않게 한다.
@@ -361,10 +361,10 @@ ROI 편집용 간단한 도구(`scripts/roi_editor.py`: 프레임 위에 다각�
 
 | 키 | 값 | 비고 |
 |---|---|---|
-| `ywhob:zone:{zone_id}` | 구역 JSON | 주기마다 덮어쓰기 |
-| `ywhob:img:{zone_id}` | 블러 JPEG 바이트 | 주기마다 덮어쓰기. TTL 120초 (잠정) |
-| `ywhob:zones` | 구역 ID 목록 (Set) | 웹 서버의 전체 조회용 |
-| `ywhob:heartbeat` | 마지막 파이프라인 동작 시각 | 파이프라인 생존 확인 |
+| `yoba:zone:{zone_id}` | 구역 JSON | 주기마다 덮어쓰기 |
+| `yoba:img:{zone_id}` | 블러 JPEG 바이트 | 주기마다 덮어쓰기. TTL 120초 (잠정) |
+| `yoba:zones` | 구역 ID 목록 (Set) | 웹 서버의 전체 조회용 |
+| `yoba:heartbeat` | 마지막 파이프라인 동작 시각 | 파이프라인 생존 확인 |
 
 ### 9.2 구역 JSON
 
@@ -430,7 +430,7 @@ ROI 편집용 간단한 도구(`scripts/roi_editor.py`: 프레임 위에 다각�
 ## 12. 디렉터리 구조 (제안)
 
 ```
-YwHob/
+YOBA/
 ├── README.md
 ├── spec.md
 ├── configs/
@@ -448,7 +448,7 @@ YwHob/
 │   ├── export.py
 │   ├── benchmark.py
 │   └── roi_editor.py
-├── ywhob/
+├── yoba/
 │   ├── capture.py
 │   ├── detect.py
 │   ├── matching.py         # (보류) 머리 확인 규칙. 현재 파이프라인에서 쓰지 않음
@@ -470,7 +470,7 @@ YwHob/
 | M3 | 현장 샘플 수집, 라벨링, 추가 학습 | 현장 적응 모델 | 현장 촬영 협의 |
 | M4 | 최소 검출 크기 현장 실측, 머리 확인 재도입 여부 판단 | 크기별 recall, ROI 마스킹 기준 | M3 |
 | M5 | ONNX 변환, 양자화, 벤치마크 | 배포 모델, 수용 카메라 수 | M2 이상, 노트북 사양 |
-| M6 | 파이프라인 구현 (캡처 → 전송) | `ywhob/` 패키지 | M5 |
+| M6 | 파이프라인 구현 (캡처 → 전송) | `yoba/` 패키지 | M5 |
 | M7 | Redis 연동, 웹 서버 합의 | 인터페이스 확정 | 웹 담당자 협의 |
 | M8 | 캘리브레이션, 리허설 검증 | `cameras.yaml`, 검증 결과 | 카메라 설치 |
 
