@@ -362,6 +362,7 @@ uv run yoba --webcam --live --model n
 - 로그에 `주기 처리 N초 (주기 10초 초과)` 경고가 반복되면 Nano 모델로 변경합니다.
 - 다른 가중치 파일은 경로로 지정할 수 있습니다: `uv run yoba --model models/yolo26s-yoba-v2.onnx`
 - 모델 별칭과 파일 경로는 `configs/service.yaml`의 `detector.models`에서 변경합니다.
+- 연산 장치는 자동으로 고릅니다: NVIDIA GPU → Mac GPU(MPS, Apple Silicon) → CPU. 실행 로그의 `장치`에서 확인하고, 직접 고르려면 `configs/service.yaml`의 `detector.device`를 지정합니다.
 - 별칭 파일이 `models/`에 없으면 `detector.download_url`(Hugging Face)에서 받습니다. 현재 공개된 가중치는 Small뿐이므로 Nano는 직접 둡니다.
 
 ### CCTV 설정 참고 사항

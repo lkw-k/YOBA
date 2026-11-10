@@ -2,7 +2,7 @@ import numpy as np
 import pytest
 
 from yoba.config import DetectorConfig
-from yoba.detect import YoloDetector
+from yoba.detect import YoloDetector, auto_device
 
 
 class _T:
@@ -67,3 +67,19 @@ def test_converts_boxes_and_keeps_only_person():
 def test_rejects_model_without_person_class0():
     with pytest.raises(ValueError, match="person"):
         YoloDetector(DetectorConfig(), model=FakeModel(names={0: "head"}))
+
+
+@pytest.mark.parametrize(
+    ("cuda", "mps", "expected"), [(True, True, 0), (False, True, "mps"), (False, False, "cpu")]
+)
+def test_auto_device_prefers_gpu(monkeypatch, cuda, mps, expected):
+    torch = pytest.importorskip("torch")
+    monkeypatch.setattr(torch.cuda, "is_available", lambda: cuda)
+    monkeypatch.setattr(torch.backends.mps, "is_available", lambda: mps)
+    assert auto_device() == expected
+
+
+def test_configured_device_overrides_auto():
+    model = FakeModel(results=[_Result([], [], []), _Result([], [], [])])
+    YoloDetector(DetectorConfig(device="cpu"), model=model).detect(FRAMES)
+    assert model.kwargs["device"] == "cpu"
