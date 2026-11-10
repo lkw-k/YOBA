@@ -45,6 +45,7 @@ class DetectorConfig:
     max_det: int = 1000
     device: str | int | None = None
     models: dict[str, str] = field(default_factory=dict)  # 별칭 → 가중치 경로 (예: s, n)
+    download_url: str | None = None  # 별칭 파일이 없을 때 받을 주소 (뒤에 파일 이름을 붙임)
 
     def with_model(self, name: str) -> DetectorConfig:
         """별칭(models의 키)이나 가중치 경로로 모델을 고른다."""

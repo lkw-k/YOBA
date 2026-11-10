@@ -310,14 +310,15 @@ Small 모델과 Nano 모델의 정확도 및 추론 속도 비교는 [9. 실행 
 저장소 루트 디렉터리에서 실행합니다. Python 3.11과 [uv](https://docs.astral.sh/uv/)가 필요합니다.
 
 ```bash
-# 1. 설치 (추론용 모델 패키지 포함)
+# 1. 설치: 가상환경(.venv) 생성과 추론용 패키지 설치를 한 번에 합니다
 uv sync --extra model
 
 # 2. 카메라 설정: 예시 파일을 복사한 뒤 CCTV RTSP 주소, 구역 ROI, capacity를 입력합니다
 cp configs/cameras.example.yaml configs/cameras.yaml
 uv run python scripts/roi_editor.py        # 현장 프레임 위에 ROI를 그려 YAML로 출력합니다
 
-# 3. 모델 가중치를 models/ 디렉터리에 둡니다 (Git 관리 대상 아님, 아래 표 참고)
+# 3. 모델 가중치: Small 가중치는 첫 실행 때 Hugging Face(illimax/YolPe)에서 models/로 자동으로 받습니다 (약 20MB)
+#    Nano 가중치는 공개 전이므로 models/ 디렉터리에 직접 둡니다 (Git 관리 대상 아님, 아래 표 참고)
 
 # 4. 설정을 검증한 뒤 실행합니다. Redis 주소는 configs/service.yaml의 redis.url입니다
 uv run yoba --check
@@ -327,7 +328,7 @@ uv run yoba --model n      # Nano 모델
 
 ### 웹캠으로 테스트
 
-CCTV가 없어도 PC에 연결된 웹캠으로 같은 파이프라인을 실행해 볼 수 있습니다. 카메라 설정(2번) 없이 1번과 3번만 하면 됩니다.
+CCTV가 없어도 PC에 연결된 웹캠으로 같은 파이프라인을 실행해 볼 수 있습니다. 카메라 설정(2번) 없이 1번만 하면 됩니다. Small 가중치는 첫 실행 때 자동으로 받습니다.
 
 ```bash
 uv run yoba --webcam               # 10초 주기: 운영과 같은 흐름으로 집계 → 블러 → Redis 전송
@@ -361,6 +362,7 @@ uv run yoba --webcam --live --model n
 - 로그에 `주기 처리 N초 (주기 10초 초과)` 경고가 반복되면 Nano 모델로 변경합니다.
 - 다른 가중치 파일은 경로로 지정할 수 있습니다: `uv run yoba --model models/yolo26s-yoba-v2.onnx`
 - 모델 별칭과 파일 경로는 `configs/service.yaml`의 `detector.models`에서 변경합니다.
+- 별칭 파일이 `models/`에 없으면 `detector.download_url`(Hugging Face)에서 받습니다. 현재 공개된 가중치는 Small뿐이므로 Nano는 직접 둡니다.
 
 ### CCTV 설정 참고 사항
 
