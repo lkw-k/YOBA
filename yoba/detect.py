@@ -32,6 +32,17 @@ class Detector(Protocol):
     def detect(self, frames: Sequence[np.ndarray]) -> list[FrameDetections]: ...
 
 
+def auto_device() -> int | str:
+    """NVIDIA GPU → Mac GPU(MPS) → CPU 순으로 고른다. Ultralytics 자동 선택은 MPS를 고르지 않는다."""
+    import torch
+
+    if torch.cuda.is_available():
+        return 0
+    if torch.backends.mps.is_available():
+        return "mps"
+    return "cpu"
+
+
 class YoloDetector:
     """YOLO26s 래퍼. model을 주면 그것을 쓴다 (테스트용)."""
 
@@ -45,7 +56,8 @@ class YoloDetector:
         if names.get(PERSON) != "person":
             raise ValueError(f"{cfg.model}: 0번 클래스가 person이 아님 ({names.get(PERSON)!r})")
         self.model = model
-        log.info("검출 모델 로드: %s (클래스 %d개)", cfg.model, len(names))
+        self.device = auto_device() if cfg.device is None else cfg.device
+        log.info("검출 모델 로드: %s (클래스 %d개, 장치 %s)", cfg.model, len(names), self.device)
 
     def detect(self, frames: Sequence[np.ndarray]) -> list[FrameDetections]:
         results = self.model.predict(
@@ -54,7 +66,7 @@ class YoloDetector:
             conf=self.cfg.person_conf,
             max_det=self.cfg.max_det,
             classes=[PERSON],
-            device=self.cfg.device,
+            device=self.device,
             verbose=False,
         )
         out = []
