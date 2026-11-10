@@ -10,12 +10,30 @@ import argparse
 import dataclasses
 import logging
 import sys
+import urllib.request
 from pathlib import Path
 
 from .capture import WEBCAM_SCHEME
 from .config import load_cameras, load_service
 from .live import run_live
 from .pipeline import Pipeline
+
+
+def download_model(url: str, dest: Path) -> bool:
+    """가중치를 받아 dest에 둔다. 받다 끊겨도 깨진 파일이 남지 않게 .part에 받은 뒤 옮긴다."""
+    part = dest.with_name(dest.name + ".part")
+    logging.info("모델 다운로드: %s → %s", url, dest)
+    try:
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        with urllib.request.urlopen(url, timeout=30) as r, open(part, "wb") as f:
+            while chunk := r.read(1 << 20):
+                f.write(chunk)
+        part.replace(dest)
+        return True
+    except OSError as e:  # URLError, HTTPError(404 포함) 모두 OSError
+        part.unlink(missing_ok=True)
+        logging.error("모델 다운로드 실패: %s (%s)", url, e)
+        return False
 
 
 def main(argv: list[str] | None = None) -> None:
@@ -50,7 +68,12 @@ def main(argv: list[str] | None = None) -> None:
     zones = sum(len(c.zones) for c in cameras)
     logging.info("설정 로드: 카메라 %d대, 구역 %d개, 모델 %s", len(cameras), zones, service.detector.model)
 
-    if not Path(service.detector.model).is_file():
+    det = service.detector
+    model = Path(det.model)
+    # 별칭 파일만 받는다. 임의 경로는 사용자가 둔 파일이라 받지 않는다
+    if not model.is_file() and not args.check and det.download_url and det.model in det.models.values():
+        download_model(det.download_url + model.name, model)
+    if not model.is_file():
         aliases = ", ".join(f"{k}={v}" for k, v in service.detector.models.items())
         msg = "모델 파일 없음: %s (별칭: %s). models/README.md 참고"
         if args.check:

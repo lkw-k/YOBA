@@ -17,6 +17,7 @@ detector:                    # spec 5.2
   models:                    # 파인튜닝 모델 (CrowdHuman, imgsz 1280). 파일은 git 제외, models/README.md 참고
     s: models/yolo26s-yoba-v1.pt   # 스몰: 정확도 우선 (기본)
     n: models/yolo26n-yoba-v1.pt   # 나노: 속도 우선. GPU가 없거나 카메라가 많을 때
+  download_url: https://huggingface.co/illimax/YolPe/resolve/main/   # 위 별칭 파일이 없으면 여기서 받음 (공개 저장소, 현재 스몰만 있음)
   imgsz: 1280
   person_conf: 0.35          # (잠정)
   max_det: 1000
