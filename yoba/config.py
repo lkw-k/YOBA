@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 from dataclasses import dataclass, field, replace
 from pathlib import Path
 
@@ -173,6 +174,8 @@ def load_service(path: str | Path) -> ServiceConfig:
         blur=_build(BlurConfig, raw.get("blur"), "blur"),
         redis=_build(RedisConfig, raw.get("redis"), "redis"),
     )
+    if os.environ.get("YOBA_REDIS_URL"):  # 비밀번호가 든 주소는 git에 올라가는 yaml 대신 .env로 받는다
+        cfg = replace(cfg, redis=replace(cfg.redis, url=os.environ["YOBA_REDIS_URL"]))
     cap = cfg.capture
     if not 1 <= cap.min_frames <= cap.frames:
         raise ConfigError("capture.min_frames: 1 이상, frames 이하")

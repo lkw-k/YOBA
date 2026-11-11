@@ -32,3 +32,4 @@ configs/cameras.yaml
 # IDE
 .idea/
 .vscode/
+.env
