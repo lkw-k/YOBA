@@ -41,7 +41,7 @@ blur:                        # spec 5.7
   jpeg_quality: 80
 
 redis:                       # spec 5.8, 9
-  url: redis://localhost:6379/0
+  url: redis://localhost:6379/0   # 환경변수 YOBA_REDIS_URL이 있으면 그 값을 쓴다 (비밀번호는 .env에)
   key_prefix: yoba
   image_ttl: 120
   image_url_base: /snapshots

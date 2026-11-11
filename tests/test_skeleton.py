@@ -258,3 +258,10 @@ def test_cli_publish_requires_live(monkeypatch):
     monkeypatch.chdir(ROOT)
     with pytest.raises(SystemExit):
         main(["--service", str(SERVICE), "--webcam", "--publish"])
+
+
+def test_redis_url_env_override(monkeypatch):
+    monkeypatch.setenv("YOBA_REDIS_URL", "redis://:pw@localhost:6379/0")
+    assert load_service(SERVICE).redis.url == "redis://:pw@localhost:6379/0"
+    monkeypatch.delenv("YOBA_REDIS_URL")
+    assert load_service(SERVICE).redis.url == "redis://localhost:6379/0"
