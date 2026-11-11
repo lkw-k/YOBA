@@ -128,7 +128,7 @@ def test_cli_rtsp_uses_webcam_config_with_given_url(tmp_path, monkeypatch, caplo
     model = tmp_path / "m.pt"
     model.write_bytes(b"")
     seen = {}
-    monkeypatch.setattr(cli, "run_live", lambda service, camera: seen.setdefault("camera", camera))
+    monkeypatch.setattr(cli, "run_live", lambda service, camera, **kw: seen.setdefault("camera", camera))
     url = "rtsp://admin:secret@10.0.0.1:554/stream1"
     with caplog.at_level("INFO"):
         main(["--service", str(SERVICE), "--rtsp", url, "--live", "--model", str(model)])
@@ -170,7 +170,7 @@ def test_cli_live_runs_preview_instead_of_pipeline(tmp_path, monkeypatch):
     model = tmp_path / "m.pt"
     model.write_bytes(b"")
     seen = {}
-    monkeypatch.setattr(cli, "run_live", lambda service, camera: seen.setdefault("camera", camera))
+    monkeypatch.setattr(cli, "run_live", lambda service, camera, **kw: seen.setdefault("camera", camera))
     monkeypatch.setattr(cli, "Pipeline", None)  # 호출되면 실패
     main(["--service", str(SERVICE), "--webcam", "--live", "--model", str(model)])
     assert seen["camera"].url == "webcam:0"
@@ -249,6 +249,12 @@ def test_cli_downloads_missing_alias_model(tmp_path, monkeypatch):
         return True
 
     monkeypatch.setattr("yoba.main.download_model", fake_download)
-    monkeypatch.setattr("yoba.main.run_live", lambda *a: None)
+    monkeypatch.setattr("yoba.main.run_live", lambda *a, **kw: None)
     main(["--service", str(service), "--webcam", "--live"])
     assert urls == ["https://huggingface.co/illimax/YolPe/resolve/main/s.pt"]
+
+
+def test_cli_publish_requires_live(monkeypatch):
+    monkeypatch.chdir(ROOT)
+    with pytest.raises(SystemExit):
+        main(["--service", str(SERVICE), "--webcam", "--publish"])

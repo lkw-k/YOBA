@@ -27,8 +27,9 @@ uv run yoba --cameras configs/cameras.example.yaml --check   # 설정 검증
 uv run yoba                         # 서비스 실행 (configs/cameras.yaml 필요, 스몰 모델)
 uv run yoba --model n               # 나노 모델로 실행
 uv run yoba --webcam [번호]          # CCTV 대신 연결된 웹캠으로 실행 (configs/cameras.webcam.yaml, 화면 전체 한 구역)
-uv run yoba --webcam --live         # 매 프레임 처리해 블러 화면을 PC 창에 띄움 (Redis 전송 없음, q/Esc 종료)
+uv run yoba --webcam --live         # 매 프레임 처리해 블러 화면을 PC 창에 띄움 (--publish 없으면 Redis 전송 없음, q/Esc 종료)
 uv run yoba --rtsp "rtsp://..." --live   # CCTV 한 대를 RTSP로 실시간 테스트 (화면 전체 한 구역, 같은 설정 파일)
+uv run yoba --rtsp "rtsp://..." --live --publish   # 실시간 모드: 프레임마다 Redis(yoba:live, yoba:frame)에도 씀 (spec 9.4)
 uv run python scripts/roi_editor.py --id cam01 --url <rtsp 주소>   # CCTV 화면에 ROI 그리기
 ```
 

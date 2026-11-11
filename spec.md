@@ -398,6 +398,35 @@ ROI 편집용 간단한 도구(`scripts/roi_editor.py`: 프레임 위에 다각�
 
 10초 주기이므로 웹 서버가 폴링한다. 푸시가 필요해지면 SSE를 추가한다.
 
+### 9.4 실시간 모드 (확정: 웹 담당과 협의)
+
+`uv run yoba --live --publish` (카메라 1대). 매 프레임 처리 결과를 아래 키에 덮어쓴다. 9.1 키는 쓰지 않는다 (`heartbeat`만 같이 갱신). 단계 판정과 인원 스무딩은 웹 서버가 사람 수 기준으로 한다.
+
+| 키 | 값 | 비고 |
+|---|---|---|
+| `yoba:cameras` | 카메라 ID 목록 (Set) | 프레임마다 `SADD` |
+| `yoba:live:{camera_id}` | 카메라 JSON | 프레임마다 덮어쓰기 |
+| `yoba:frame:{camera_id}` | 블러 JPEG 바이트 (테두리·박스 없음) | TTL `redis.live_frame_ttl_ms` (5000ms). 블러 실패 시 검은 JPEG |
+
+```json
+{
+  "camera_id": "cam01",
+  "updated_at": "2026-11-20T14:30:00.123+09:00",
+  "frame_size": [1280, 720],
+  "fps": 7.8,
+  "latency_ms": 180,
+  "blur_ok": true,
+  "blur_fail_total": 3,
+  "frames_total": 51234,
+  "zones": [{ "zone_id": "hall_a_front", "count": 12, "roi": [[120,400],[980,400],[1260,710],[20,710]] }]
+}
+```
+
+- `updated_at`: 프레임마다 바뀐다. 웹은 3초 넘게 안 바뀌면 "확인 불가"로 표시한다 (시각 비교 없음).
+- `count`: 그 프레임의 구역 인원 (스무딩 전 원본). `roi`는 `cameras.yaml` 좌표를 정수로, 기준은 `frame_size`(원본 크기).
+- `latency_ms`: 프레임 수신 → 전송 직전. `blur_fail_total`, `frames_total`은 프로세스 시작 후 누적.
+- `name`, `zones[].name`은 설정에 이름 필드가 없어 보내지 않는다 (웹은 ID를 표시).
+
 ---
 
 ## 10. 운영과 장애 처리

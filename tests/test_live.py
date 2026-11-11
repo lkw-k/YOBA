@@ -110,3 +110,30 @@ def test_run_live_opens_webcam_on_main_thread_on_macos(monkeypatch):
     rtsp = CameraConfig("cam01", "rtsp://x/1", (ZONE,))
     live.run_live(ServiceConfig(), rtsp, FakeDetector(BOX), FakeStream([None]))
     assert opened == []  # RTSP는 카메라 권한과 무관
+
+
+def test_run_live_publishes_plain_blurred_jpeg(monkeypatch):
+    from yoba import live
+
+    frame = _noise()
+    stream = FakeStream([(1, 0.0, frame), (2, 0.0, frame)])
+    keys = iter([-1, -1, ord("q")])
+    monkeypatch.setattr(live.cv2, "imshow", lambda win, img: None)
+    monkeypatch.setattr(live.cv2, "waitKey", lambda ms: next(keys))
+    monkeypatch.setattr(live.cv2, "getWindowProperty", lambda win, prop: 1.0)
+    monkeypatch.setattr(live.cv2, "destroyAllWindows", lambda: None)
+
+    class FakePublisher:
+        def __init__(self):
+            self.calls = []
+
+        def publish(self, frame_size, counts, jpeg, fps, latency_ms):
+            self.calls.append((frame_size, counts, jpeg))
+
+    pub = FakePublisher()
+    live.run_live(ServiceConfig(), CAMERA, FakeDetector(BOX), stream, pub)
+    assert len(pub.calls) == 2  # 새 프레임마다 한 번
+    size, counts, jpeg = pub.calls[0]
+    assert size == (1280, 720) and counts == {"all": 1}
+    img = live.cv2.imdecode(np.frombuffer(jpeg, np.uint8), live.cv2.IMREAD_COLOR)
+    assert tuple(img[300, 300]) != (255, 255, 0)  # 화면용 박스 테두리가 없는 블러 이미지
