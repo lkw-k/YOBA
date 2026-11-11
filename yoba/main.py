@@ -1,7 +1,8 @@
 """실행 진입점: `uv run yoba --cameras configs/cameras.yaml [--model s|n]`
 
 웹캠 테스트: `uv run yoba --webcam [번호]` (configs/cameras.webcam.yaml, 화면 전체를 한 구역으로)
-실시간 미리보기: `uv run yoba --webcam --live` (매 프레임 처리해 PC 창에 띄움, Redis 전송 없음)
+RTSP 테스트: `uv run yoba --rtsp "rtsp://..."` (같은 설정, 화면 전체 한 구역)
+실시간 미리보기: `--webcam` 또는 `--rtsp`에 `--live` (매 프레임 처리해 PC 창에 띄움, Redis 전송 없음)
 """
 
 from __future__ import annotations
@@ -39,9 +40,12 @@ def download_model(url: str, dest: Path) -> bool:
 def main(argv: list[str] | None = None) -> None:
     ap = argparse.ArgumentParser(prog="yoba", description="CCTV 혼잡도 측정 파이프라인")
     ap.add_argument("--service", default="configs/service.yaml")
-    ap.add_argument("--cameras", help="카메라 설정. 기본 configs/cameras.yaml, --webcam이면 configs/cameras.webcam.yaml")
-    ap.add_argument("--webcam", type=int, nargs="?", const=0, metavar="번호",
-                    help="CCTV 대신 PC에 연결된 웹캠으로 실행 (기본 0번: 노트북 내장, USB 웹캠은 보통 1)")
+    ap.add_argument("--cameras", help="카메라 설정. 기본 configs/cameras.yaml, --webcam/--rtsp면 configs/cameras.webcam.yaml")
+    test_src = ap.add_mutually_exclusive_group()
+    test_src.add_argument("--webcam", type=int, nargs="?", const=0, metavar="번호",
+                          help="CCTV 대신 PC에 연결된 웹캠으로 실행 (기본 0번: 노트북 내장, USB 웹캠은 보통 1)")
+    test_src.add_argument("--rtsp", metavar="URL",
+                          help="CCTV 한 대를 RTSP 주소로 바로 열어 테스트 (화면 전체 한 구역, ROI 설정 불필요)")
     ap.add_argument("--live", action="store_true",
                     help="10초 주기 대신 매 프레임 처리해 블러 화면을 PC 창에 띄움 (카메라 1대, Redis 전송 없음)")
     ap.add_argument("--model", help="검출 모델. service.yaml detector.models의 별칭(s: 스몰, n: 나노) 또는 가중치 경로")
@@ -52,8 +56,12 @@ def main(argv: list[str] | None = None) -> None:
     service = load_service(args.service)
     if args.model:
         service = dataclasses.replace(service, detector=service.detector.with_model(args.model))
+    test_mode = args.webcam is not None or args.rtsp is not None
+    if args.rtsp is not None and not args.rtsp.lower().startswith(("rtsp://", "rtsps://")):
+        logging.error("--rtsp 주소는 rtsp:// 또는 rtsps://로 시작해야 함")  # 주소에 계정이 있을 수 있어 출력하지 않는다
+        sys.exit(1)
     if args.cameras is None:
-        args.cameras = "configs/cameras.webcam.yaml" if args.webcam is not None else "configs/cameras.yaml"
+        args.cameras = "configs/cameras.webcam.yaml" if test_mode else "configs/cameras.yaml"
     if not Path(args.cameras).is_file():
         logging.error("카메라 설정 없음: %s (configs/cameras.example.yaml을 복사해 RTSP 주소와 ROI를 채운다)", args.cameras)
         sys.exit(1)
@@ -61,8 +69,12 @@ def main(argv: list[str] | None = None) -> None:
     if args.webcam is not None:
         cameras = [dataclasses.replace(c, url=f"{WEBCAM_SCHEME}{args.webcam}") for c in cameras]
         logging.info("웹캠 %d번으로 실행", args.webcam)
-    if (args.live or args.webcam is not None) and len(cameras) != 1:
-        opt = "--live" if args.live else "--webcam"  # 웹캠 한 대를 여러 카메라가 동시에 열 수 없다
+    if args.rtsp is not None:
+        cameras = [dataclasses.replace(c, url=args.rtsp) for c in cameras]
+        logging.info("RTSP 주소로 실행 (카메라 id: %s)", ", ".join(c.id for c in cameras))  # 주소(계정 포함)는 남기지 않는다
+    if (args.live or test_mode) and len(cameras) != 1:
+        # 웹캠/RTSP 한 대를 여러 카메라가 동시에 열 수 없다
+        opt = "--live" if args.live else ("--webcam" if args.webcam is not None else "--rtsp")
         logging.error("%s는 카메라 1대만 지원: %s에 %d대 (1대짜리 설정을 준다)", opt, args.cameras, len(cameras))
         sys.exit(1)
     zones = sum(len(c.zones) for c in cameras)
