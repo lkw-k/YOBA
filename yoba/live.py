@@ -1,6 +1,8 @@
-"""실시간 미리보기: `uv run yoba --webcam --live`
+"""실시간 미리보기 (테스트용): `uv run yoba --webcam --live`, `uv run yoba --rtsp "rtsp://..." --live`
 
 10초 주기 파이프라인과 같은 모델, 구역 집계, 블러 설정을 쓰되 매 프레임 처리해서 PC 창에 띄운다.
+- 카메라는 CameraStream으로 읽어 최신 프레임만 처리한다. 추론이 CCTV 프레임 속도보다 느려도
+  버퍼에 밀린 프레임 때문에 화면이 늦어지지 않고, 끊기면 종료 대신 재연결한다
 - 프레임마다 검출 → 구역별 인원 → ZoneTracker(EMA, 히스테리시스)를 한 프레임 = 한 주기로 갱신
 - 화면에는 블러된 이미지만 띄운다. 블러 검증이 실패하면 검은 화면으로 비운다
 - Redis로는 보내지 않는다 (전송은 10초 주기 모드 담당). 원본 프레임은 저장하지 않는다
@@ -10,6 +12,7 @@
 from __future__ import annotations
 
 import logging
+import sys
 import time
 
 import cv2
@@ -17,7 +20,7 @@ import numpy as np
 
 from .aggregate import ZoneAssigner, ZoneResult, ZoneTracker
 from .blur import privacy_blur
-from .capture import open_video
+from .capture import WEBCAM_SCHEME, CameraStream, open_video
 from .config import CameraConfig, ServiceConfig
 from .detect import Detector, YoloDetector
 
@@ -69,33 +72,48 @@ def _overlay(view: np.ndarray, results: list[ZoneResult], blurred: bool, fps: fl
         cv2.putText(view, text, (10, 28 + 26 * i), cv2.FONT_HERSHEY_SIMPLEX, 0.7, color, 2)
 
 
-def run_live(service: ServiceConfig, camera: CameraConfig, detector: Detector | None = None) -> None:
+def _waiting_screen(service: ServiceConfig) -> np.ndarray:
+    """첫 프레임을 받기 전 화면. 창을 먼저 띄워 두어야 q/Esc와 창 닫기가 동작한다."""
+    long_side = service.blur.output_long_side
+    view = np.zeros((long_side * 9 // 16, long_side, 3), np.uint8)
+    cv2.putText(view, "connecting...", (10, 28), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 255), 2)
+    return view
+
+
+def run_live(
+    service: ServiceConfig,
+    camera: CameraConfig,
+    detector: Detector | None = None,
+    stream: CameraStream | None = None,
+) -> None:
     detector = detector or YoloDetector(service.detector)
-    cap = open_video(camera.url, service.capture)
-    if not cap.isOpened():
-        log.error("%s: 카메라를 열 수 없음 (--webcam 번호를 바꿔 본다)", camera.id)
-        return
+    stream = stream or CameraStream(camera, service.capture)  # 연결 실패·끊김은 스트림이 로그를 남기고 재연결
     view_fn = LiveView(service, camera, detector)
     log.info("%s: 실시간 미리보기 시작. 창에서 q 또는 Esc로 종료", camera.id)
+    if sys.platform == "darwin" and camera.url.lower().startswith(WEBCAM_SCHEME):
+        # macOS는 카메라 권한 요청을 메인 스레드에서만 띄울 수 있어, 스트림 스레드보다 먼저 한 번 열었다 닫는다
+        open_video(camera.url, service.capture).release()
+    stream.start()
+    cv2.imshow(WINDOW, _waiting_screen(service))
+    last_seq = -1
     prev = time.perf_counter()
     try:
         while True:
-            ok, frame = cap.read()
-            if not ok or frame is None:
-                log.error("%s: 프레임을 읽지 못해 종료", camera.id)
-                return
-            view, results, blurred = view_fn.process(frame)
-            del frame  # 원본은 화면에 띄우지도 남기지도 않는다
-            now = time.perf_counter()
-            fps, prev = 1 / max(now - prev, 1e-6), now
-            _overlay(view, results, blurred, fps)
-            cv2.imshow(WINDOW, view)
+            got = stream.latest()
+            if got is not None and got[0] != last_seq:  # 새 프레임만 처리. 끊긴 동안은 마지막 화면을 유지
+                last_seq, _, frame = got
+                view, results, blurred = view_fn.process(frame)
+                del frame, got  # 원본은 화면에 띄우지도 남기지도 않는다
+                now = time.perf_counter()
+                fps, prev = 1 / max(now - prev, 1e-6), now
+                _overlay(view, results, blurred, fps)
+                cv2.imshow(WINDOW, view)
             key = cv2.waitKey(1) & 0xFF
             if key in (ord("q"), 27) or cv2.getWindowProperty(WINDOW, cv2.WND_PROP_VISIBLE) < 1:
                 return
     except KeyboardInterrupt:
         pass
     finally:
-        cap.release()
+        stream.stop()
         cv2.destroyAllWindows()
         log.info("%s: 실시간 미리보기 종료", camera.id)

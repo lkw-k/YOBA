@@ -121,6 +121,32 @@ def test_cli_webcam_uses_webcam_config(tmp_path, monkeypatch):
     assert cams[0].zones[0].zone_id == "webcam_all"
 
 
+def test_cli_rtsp_uses_webcam_config_with_given_url(tmp_path, monkeypatch, caplog):
+    import yoba.main as cli
+
+    monkeypatch.chdir(ROOT)
+    model = tmp_path / "m.pt"
+    model.write_bytes(b"")
+    seen = {}
+    monkeypatch.setattr(cli, "run_live", lambda service, camera: seen.setdefault("camera", camera))
+    url = "rtsp://admin:secret@10.0.0.1:554/stream1"
+    with caplog.at_level("INFO"):
+        main(["--service", str(SERVICE), "--rtsp", url, "--live", "--model", str(model)])
+    assert seen["camera"].url == url
+    assert seen["camera"].zones[0].zone_id == "webcam_all"  # 화면 전체 한 구역
+    assert "secret" not in caplog.text  # RTSP 계정을 로그에 남기지 않는다
+
+
+@pytest.mark.parametrize("argv", [
+    ["--rtsp", "http://10.0.0.1/stream"],  # rtsp:// 아님
+    ["--rtsp", "rtsp://x/1", "--webcam"],  # 둘 중 하나만
+])
+def test_cli_rtsp_rejects_bad_args(argv, monkeypatch):
+    monkeypatch.chdir(ROOT)
+    with pytest.raises(SystemExit):
+        main(["--service", str(SERVICE), "--check", *argv])
+
+
 def test_webcam_config_loads():
     cams = load_cameras(ROOT / "configs" / "cameras.webcam.yaml")
     assert cams[0].url == "webcam:0"
