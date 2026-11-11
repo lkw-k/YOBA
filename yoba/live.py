@@ -1,11 +1,12 @@
-"""실시간 미리보기 (테스트용): `uv run yoba --webcam --live`, `uv run yoba --rtsp "rtsp://..." --live`
+"""실시간 모드: `uv run yoba --webcam --live`, `uv run yoba --rtsp "rtsp://..." --live [--publish]`
 
 10초 주기 파이프라인과 같은 모델, 구역 집계, 블러 설정을 쓰되 매 프레임 처리해서 PC 창에 띄운다.
 - 카메라는 CameraStream으로 읽어 최신 프레임만 처리한다. 추론이 CCTV 프레임 속도보다 느려도
   버퍼에 밀린 프레임 때문에 화면이 늦어지지 않고, 끊기면 종료 대신 재연결한다
 - 프레임마다 검출 → 구역별 인원 → ZoneTracker(EMA, 히스테리시스)를 한 프레임 = 한 주기로 갱신
 - 화면에는 블러된 이미지만 띄운다. 블러 검증이 실패하면 검은 화면으로 비운다
-- Redis로는 보내지 않는다 (전송은 10초 주기 모드 담당). 원본 프레임은 저장하지 않는다
+- --publish면 프레임마다 구역별 원본 인원과 블러 JPEG(테두리·박스 없음)를 Redis에 덮어쓴다 (spec 9.4)
+- 원본 프레임은 저장하지 않는다
 - 창에서 q 또는 Esc, 창 닫기로 종료
 """
 
@@ -23,6 +24,7 @@ from .blur import privacy_blur
 from .capture import WEBCAM_SCHEME, CameraStream, open_video
 from .config import CameraConfig, ServiceConfig
 from .detect import Detector, YoloDetector
+from .publish import LivePublisher
 
 log = logging.getLogger(__name__)
 
@@ -40,8 +42,8 @@ class LiveView:
         self.assigner = ZoneAssigner(camera.zones, camera.mask)
         self.trackers = [ZoneTracker(z, service.aggregate) for z in camera.zones]
 
-    def process(self, frame: np.ndarray) -> tuple[np.ndarray, list[ZoneResult], bool]:
-        """(화면, 구역 결과, 블러 성공 여부)."""
+    def process(self, frame: np.ndarray) -> tuple[np.ndarray, list[ZoneResult], bytes | None]:
+        """(화면, 구역 결과, 블러 JPEG). JPEG는 테두리·박스를 그리기 전 이미지이고 블러 실패면 None."""
         persons = self.detector.detect([frame])[0].persons
         counts = self.assigner.count(persons)
         results = [t.update([counts[t.zone.zone_id]]) for t in self.trackers]
@@ -50,7 +52,7 @@ class LiveView:
         jpeg = privacy_blur(frame, persons, self.service.blur)
         if jpeg is None:
             scale = min(1.0, self.service.blur.output_long_side / max(h, w))
-            return np.zeros((round(h * scale), round(w * scale), 3), np.uint8), results, False
+            return np.zeros((round(h * scale), round(w * scale), 3), np.uint8), results, None
 
         view = cv2.imdecode(np.frombuffer(jpeg, np.uint8), cv2.IMREAD_COLOR)
         scale = view.shape[1] / w  # privacy_blur가 줄인 비율에 맞춰 좌표를 옮긴다
@@ -60,7 +62,7 @@ class LiveView:
         for x0, y0, x1, y1 in np.asarray(persons).reshape(-1, 4):
             cv2.rectangle(view, (round(x0 * scale), round(y0 * scale)), (round(x1 * scale), round(y1 * scale)),
                           (255, 255, 0), 2)
-        return view, results, True
+        return view, results, jpeg
 
 
 def _overlay(view: np.ndarray, results: list[ZoneResult], blurred: bool, fps: float) -> None:
@@ -85,6 +87,7 @@ def run_live(
     camera: CameraConfig,
     detector: Detector | None = None,
     stream: CameraStream | None = None,
+    publisher: LivePublisher | None = None,
 ) -> None:
     detector = detector or YoloDetector(service.detector)
     stream = stream or CameraStream(camera, service.capture)  # 연결 실패·끊김은 스트림이 로그를 남기고 재연결
@@ -101,11 +104,17 @@ def run_live(
         while True:
             got = stream.latest()
             if got is not None and got[0] != last_seq:  # 새 프레임만 처리. 끊긴 동안은 마지막 화면을 유지
-                last_seq, _, frame = got
-                view, results, blurred = view_fn.process(frame)
+                last_seq, received_at, frame = got
+                h, w = frame.shape[:2]
+                view, results, jpeg = view_fn.process(frame)
                 del frame, got  # 원본은 화면에 띄우지도 남기지도 않는다
+                blurred = jpeg is not None
                 now = time.perf_counter()
                 fps, prev = 1 / max(now - prev, 1e-6), now
+                if publisher is not None:
+                    # 한 프레임 = 한 주기라 median이 그 프레임의 원본 인원 (스무딩은 웹이 한다)
+                    counts = {r.zone_id: r.median for r in results}
+                    publisher.publish((w, h), counts, jpeg, fps, (time.monotonic() - received_at) * 1000)
                 _overlay(view, results, blurred, fps)
                 cv2.imshow(WINDOW, view)
             key = cv2.waitKey(1) & 0xFF

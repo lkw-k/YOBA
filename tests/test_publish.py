@@ -106,3 +106,56 @@ def test_redis_down_does_not_raise():
 def test_heartbeat(r):
     Publisher(r, RedisConfig()).heartbeat(T1)
     assert r.get("yoba:heartbeat") == b"2026-09-20T14:30:00+09:00"
+
+
+# --- 실시간 모드 (spec 9.4) ---
+
+from yoba.config import CameraConfig, ZoneConfig  # noqa: E402
+from yoba.publish import LivePublisher  # noqa: E402
+
+LIVE_CAM = CameraConfig("cam01", "rtsp://x/1", (ZoneConfig("front", ((0, 0), (100.4, 0), (100, 50)), 5),))
+
+
+def test_live_publish_writes_json_frame_and_camera_set(r):
+    lp = LivePublisher(r, RedisConfig(), LIVE_CAM)
+    assert lp.publish((1280, 720), {"front": 3.0}, b"\xff\xd8jpeg", 7.84, 180.4)
+    live = json.loads(r.get("yoba:live:cam01"))
+    assert {k: live[k] for k in ("camera_id", "frame_size", "fps", "latency_ms", "blur_ok",
+                                  "blur_fail_total", "frames_total")} == {
+        "camera_id": "cam01", "frame_size": [1280, 720], "fps": 7.8, "latency_ms": 180,
+        "blur_ok": True, "blur_fail_total": 0, "frames_total": 1,
+    }
+    assert live["zones"] == [{"zone_id": "front", "count": 3, "roi": [[0, 0], [100, 0], [100, 50]]}]
+    assert datetime.fromisoformat(live["updated_at"]).utcoffset() == KST.utcoffset(None)
+    assert r.get("yoba:frame:cam01") == b"\xff\xd8jpeg"
+    assert 0 < r.pttl("yoba:frame:cam01") <= 5000
+    assert r.smembers("yoba:cameras") == {b"cam01"}
+    assert r.get("yoba:heartbeat")
+    assert r.get("yoba:zone:front") is None  # 10초 모드 키는 건드리지 않는다
+
+
+def test_live_publish_blur_failure_sends_black_jpeg(r):
+    lp = LivePublisher(r, RedisConfig(), LIVE_CAM)
+    lp.publish((1280, 720), {"front": 2}, None, 5.0, 100)
+    live = json.loads(r.get("yoba:live:cam01"))
+    assert live["blur_ok"] is False and live["blur_fail_total"] == 1
+    assert live["zones"][0]["count"] == 2  # 사람 수는 그대로 보낸다
+    import cv2
+    import numpy as np
+    img = cv2.imdecode(np.frombuffer(r.get("yoba:frame:cam01"), np.uint8), cv2.IMREAD_COLOR)
+    assert img is not None and img.max() < 10  # 검은 화면 (JPEG 오차 허용)
+
+
+def test_live_publish_redis_failure_logs_once(caplog):
+    import redis
+
+    class Broken:
+        def pipeline(self):
+            raise redis.ConnectionError
+
+    lp = LivePublisher(Broken(), RedisConfig(), LIVE_CAM)
+    with caplog.at_level("WARNING"):
+        assert not lp.publish((1280, 720), {"front": 1}, b"j", 5.0, 100)
+        assert not lp.publish((1280, 720), {"front": 1}, b"j", 5.0, 100)
+    assert len([r for r in caplog.records if r.levelname == "WARNING"]) == 1
+    assert lp.frames_total == 2

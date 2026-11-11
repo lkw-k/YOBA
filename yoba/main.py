@@ -2,7 +2,7 @@
 
 웹캠 테스트: `uv run yoba --webcam [번호]` (configs/cameras.webcam.yaml, 화면 전체를 한 구역으로)
 RTSP 테스트: `uv run yoba --rtsp "rtsp://..."` (같은 설정, 화면 전체 한 구역)
-실시간 미리보기: `--webcam` 또는 `--rtsp`에 `--live` (매 프레임 처리해 PC 창에 띄움, Redis 전송 없음)
+실시간 모드: `--live` (매 프레임 처리해 PC 창에 띄움). `--publish`를 더하면 프레임마다 Redis에도 씀 (spec 9.4)
 """
 
 from __future__ import annotations
@@ -12,12 +12,15 @@ import dataclasses
 import logging
 import sys
 import urllib.request
+
+import redis
 from pathlib import Path
 
 from .capture import WEBCAM_SCHEME
 from .config import load_cameras, load_service
 from .live import run_live
 from .pipeline import Pipeline
+from .publish import LivePublisher
 
 
 def download_model(url: str, dest: Path) -> bool:
@@ -47,7 +50,9 @@ def main(argv: list[str] | None = None) -> None:
     test_src.add_argument("--rtsp", metavar="URL",
                           help="CCTV 한 대를 RTSP 주소로 바로 열어 테스트 (화면 전체 한 구역, ROI 설정 불필요)")
     ap.add_argument("--live", action="store_true",
-                    help="10초 주기 대신 매 프레임 처리해 블러 화면을 PC 창에 띄움 (카메라 1대, Redis 전송 없음)")
+                    help="10초 주기 대신 매 프레임 처리해 블러 화면을 PC 창에 띄움 (카메라 1대)")
+    ap.add_argument("--publish", action="store_true",
+                    help="--live와 함께: 프레임마다 인원과 블러 이미지를 Redis(yoba:live, yoba:frame)에 씀")
     ap.add_argument("--model", help="검출 모델. service.yaml detector.models의 별칭(s: 스몰, n: 나노) 또는 가중치 경로")
     ap.add_argument("--check", action="store_true", help="설정만 검증하고 종료")
     args = ap.parse_args(argv)
@@ -56,6 +61,9 @@ def main(argv: list[str] | None = None) -> None:
     service = load_service(args.service)
     if args.model:
         service = dataclasses.replace(service, detector=service.detector.with_model(args.model))
+    if args.publish and not args.live:
+        logging.error("--publish는 --live와 함께 쓴다 (10초 주기 모드는 원래 Redis로 보냄)")
+        sys.exit(1)
     test_mode = args.webcam is not None or args.rtsp is not None
     if args.rtsp is not None and not args.rtsp.lower().startswith(("rtsp://", "rtsps://")):
         logging.error("--rtsp 주소는 rtsp:// 또는 rtsps://로 시작해야 함")  # 주소에 계정이 있을 수 있어 출력하지 않는다
@@ -96,7 +104,12 @@ def main(argv: list[str] | None = None) -> None:
     if args.check:
         return
     if args.live:
-        run_live(service, cameras[0])
+        publisher = None
+        if args.publish:
+            rc = service.redis
+            client = redis.Redis.from_url(rc.url, socket_timeout=rc.socket_timeout, socket_connect_timeout=rc.socket_timeout)
+            publisher = LivePublisher(client, rc, cameras[0])
+        run_live(service, cameras[0], publisher=publisher)
         return
     Pipeline(service, cameras).run()
 
