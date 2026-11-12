@@ -24,22 +24,32 @@ CCTV ─RTSP─▶ YOBA (노트북, 모델 실행) ══SSH 터널══▶ 학
   ```
   비밀번호 앞의 `:`는 지우지 않는다.
 - CCTV 유선 케이블을 노트북에 꽂는다.
-- (권장) 터널 자동 재연결: `brew install autossh`
+- 터널 자동 재연결 준비 (끊길 때마다 비밀번호를 치지 않도록 SSH 키로 접속한다)
+  ```bash
+  brew install autossh
+  ssh-keygen -t ed25519 -N "" -C "yoba-laptop" -f ~/.ssh/yoba_school
+  ssh-copy-id -i ~/.ssh/yoba_school.pub -p <SSH_포트> <SSH_주소>   # SSH 비밀번호를 마지막으로 한 번 입력
+  ```
+  키 파일(`~/.ssh/yoba_school`)이 있으면 비밀번호 없이 서버에 들어갈 수 있으므로 노트북 관리에 주의한다.
 
 명령은 macOS 기본 셸(zsh) 기준이다. `read "u?..."`는 bash에서는 동작하지 않는다.
 
 ## 1. 터미널 ①: SSH 터널 (계속 켜 둔다)
 
 ```bash
-ssh -o ServerAliveInterval=30 -L 6379:127.0.0.1:6379 <SSH_주소> -p <SSH_포트>
+AUTOSSH_GATETIME=0 autossh -M 0 -N -i ~/.ssh/yoba_school -o ServerAliveInterval=10 -o ServerAliveCountMax=3 -o ExitOnForwardFailure=yes -L 6379:127.0.0.1:6379 -p <SSH_포트> <SSH_주소>
 ```
 
-SSH 비밀번호를 입력하면 서버에 로그인된다. 창을 닫으면 터널이 끊기고 웹이 "확인 불가"가 된다. `ServerAliveInterval=30`은 가만히 둬도 접속이 끊기지 않게 한다.
+- 아무것도 안 나오면 연결된 것이다. 창을 닫으면 터널이 끊기고 웹이 "확인 불가"가 된다.
+- 와이파이를 바꾸거나 랜선을 꽂아 인터넷이 바뀌면, 약 30초 안에 끊김을 알아채고 지금 연결된 인터넷으로 다시 접속한다. YOBA는 끄지 않아도 된다.
+- `AUTOSSH_GATETIME=0`: 켠 직후(30초 안)에 끊겨도 포기하지 않고 계속 다시 접속한다. 이게 없으면 시작 직후 끊길 때 autossh가 그냥 종료된다.
+- 6379 포트를 이미 다른 터널이 쓰고 있으면 `Address already in use`가 반복해서 찍힌다. 예전 터널 창을 닫으면 그때 붙는다.
+- 새로 잡은 인터넷이 `192.168.0.x` 주소를 쓰면 CCTV 망과 겹쳐 CCTV 연결이 꼬일 수 있다. 운영 중에는 인터넷 연결을 하나로 정해 둔다.
 
-autossh를 쓰면 끊겨도 자동으로 다시 붙는다.
+SSH 키 없이 비밀번호로 접속할 때 (끊기면 직접 다시 켜야 함):
 
 ```bash
-autossh -M 0 -N -o ServerAliveInterval=30 -o ServerAliveCountMax=3 -L 6379:127.0.0.1:6379 <SSH_주소> -p <SSH_포트>
+ssh -o ServerAliveInterval=30 -L 6379:127.0.0.1:6379 <SSH_주소> -p <SSH_포트>
 ```
 
 ## 2. 터미널 ②: YOBA 실행
@@ -70,7 +80,7 @@ except redis.RedisError: print('Redis 연결 실패 → 터널 확인')"
 
 | 증상 | 할 일 |
 |---|---|
-| `터널 꺼짐` | 1번을 다시 한다. YOBA는 끄지 않아도 터널이 붙으면 다시 전송한다 |
+| `터널 꺼짐` | autossh 창이 켜져 있으면 30초쯤 기다린다. 창이 닫혔으면 1번을 다시 한다. YOBA는 끄지 않아도 터널이 붙으면 다시 전송한다 |
 | YOBA 로그에 `실시간 Redis 전송 실패` | 터널을 확인한다. 터널이 켜져 있으면 `.env`의 비밀번호를 확인한다 |
 | CCTV 연결 실패 | 유선 케이블, CCTV 계정과 비밀번호를 확인한다 |
 | 사람 수는 나오는데 화면이 빔 | 정지 장면이라 JPEG가 매번 같으면 웹이 화면을 오래된 것으로 판단한다. 카메라 앞에서 움직이면 나와야 한다 (웹 쪽 수정 필요, 미확인) |
@@ -88,4 +98,4 @@ cd ~/YOBA && uv run --env-file .env yoba
 ## 5. 종료
 
 1. YOBA 화면 창에서 `q`
-2. 터널 창에서 `exit` (autossh면 `Ctrl+C`)
+2. 터널 창에서 `Ctrl+C`
