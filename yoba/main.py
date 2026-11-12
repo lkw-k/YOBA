@@ -20,7 +20,7 @@ from .capture import WEBCAM_SCHEME
 from .config import load_cameras, load_service
 from .live import run_live
 from .pipeline import Pipeline
-from .publish import LivePublisher
+from .publish import LatestSender, LivePublisher
 
 
 def download_model(url: str, dest: Path) -> bool:
@@ -108,8 +108,12 @@ def main(argv: list[str] | None = None) -> None:
         if args.publish:
             rc = service.redis
             client = redis.Redis.from_url(rc.url, socket_timeout=rc.socket_timeout, socket_connect_timeout=rc.socket_timeout)
-            publisher = LivePublisher(client, rc, cameras[0])
-        run_live(service, cameras[0], publisher=publisher)
+            publisher = LatestSender(LivePublisher(client, rc, cameras[0]))
+        try:
+            run_live(service, cameras[0], publisher=publisher)
+        finally:
+            if publisher is not None:
+                publisher.close()
         return
     Pipeline(service, cameras).run()
 

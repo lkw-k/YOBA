@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import json
 import logging
+import threading
 from datetime import datetime, timedelta, timezone
 
 import cv2
@@ -153,3 +154,37 @@ class LivePublisher:
             log.info("%s: 실시간 Redis 전송 복구", self.camera.id)
         self._failing = False
         return True
+
+
+class LatestSender:
+    """LivePublisher.publish를 별도 스레드에서 돌린다. 전송(SSH 터널 너머 Redis)이 느려도 검출·화면 루프를
+    막지 않고, 전송 중에 쌓인 프레임은 버리고 가장 최근 것만 보낸다."""
+
+    def __init__(self, publisher: LivePublisher):
+        self._pub = publisher
+        self._cond = threading.Condition()
+        self._args: tuple | None = None
+        self._stop = False
+        self._thread = threading.Thread(target=self._run, name="live-publish", daemon=True)
+        self._thread.start()
+
+    def publish(self, *args) -> None:
+        with self._cond:
+            self._args = args  # 아직 안 보낸 이전 프레임은 덮어쓴다
+            self._cond.notify()
+
+    def close(self) -> None:
+        with self._cond:
+            self._stop = True
+            self._cond.notify()
+        self._thread.join(timeout=5)
+
+    def _run(self) -> None:
+        while True:
+            with self._cond:
+                while self._args is None and not self._stop:
+                    self._cond.wait()
+                if self._args is None:
+                    return
+                args, self._args = self._args, None
+            self._pub.publish(*args)
