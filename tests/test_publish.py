@@ -159,3 +159,26 @@ def test_live_publish_redis_failure_logs_once(caplog):
         assert not lp.publish((1280, 720), {"front": 1}, b"j", 5.0, 100)
     assert len([r for r in caplog.records if r.levelname == "WARNING"]) == 1
     assert lp.frames_total == 2
+
+
+def test_latest_sender_skips_stale_frames_and_never_blocks():
+    import threading
+    import time
+
+    from yoba.publish import LatestSender
+
+    gate, sent = threading.Event(), []
+
+    class Slow:
+        def publish(self, *args):
+            gate.wait(2)  # 느린 네트워크
+            sent.append(args[0])
+
+    s = LatestSender(Slow())
+    t = time.perf_counter()
+    for i in range(5):
+        s.publish(i)
+    assert time.perf_counter() - t < 0.5  # 호출자는 전송을 기다리지 않는다
+    gate.set()
+    s.close()
+    assert sent[-1] == 4 and len(sent) < 5  # 밀린 프레임은 건너뛰고 마지막 것은 반드시 보낸다
