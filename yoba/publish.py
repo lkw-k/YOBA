@@ -114,13 +114,16 @@ class LivePublisher:
         self.frames_total = 0
         self.blur_fail_total = 0
         self._failing = False  # 초당 여러 번 실패해도 경고는 상태가 바뀔 때만 남긴다
+        self._lock = threading.Lock()  # LatestSender가 여러 스레드에서 부른다
         self._black = cv2.imencode(".jpg", np.zeros((540, 960, 3), np.uint8))[1].tobytes()
 
     def publish(self, frame_size: tuple[int, int], counts: dict[str, float], jpeg: bytes | None,
                 fps: float, latency_ms: float) -> bool:
-        self.frames_total += 1
-        if jpeg is None:
-            self.blur_fail_total += 1
+        with self._lock:
+            self.frames_total += 1
+            if jpeg is None:
+                self.blur_fail_total += 1
+            frames_total, blur_fail_total = self.frames_total, self.blur_fail_total
         now = datetime.now(KST)
         payload = {
             "camera_id": self.camera.id,
@@ -129,8 +132,8 @@ class LivePublisher:
             "fps": round(fps, 1),
             "latency_ms": round(latency_ms),
             "blur_ok": jpeg is not None,
-            "blur_fail_total": self.blur_fail_total,
-            "frames_total": self.frames_total,
+            "blur_fail_total": blur_fail_total,
+            "frames_total": frames_total,
             "zones": [
                 {"zone_id": z.zone_id, "count": int(counts[z.zone_id]), "roi": [[round(x), round(y)] for x, y in z.roi]}
                 for z in self.camera.zones
@@ -157,16 +160,21 @@ class LivePublisher:
 
 
 class LatestSender:
-    """LivePublisher.publish를 별도 스레드에서 돌린다. 전송(SSH 터널 너머 Redis)이 느려도 검출·화면 루프를
+    """LivePublisher.publish를 별도 스레드(workers개)에서 돌린다. 전송(SSH 터널 너머 Redis)이 느려도 검출·화면 루프를
     막지 않고, 전송 중에 쌓인 프레임은 버리고 가장 최근 것만 보낸다."""
 
-    def __init__(self, publisher: LivePublisher):
+    def __init__(self, publisher: LivePublisher, workers: int = 1):
         self._pub = publisher
         self._cond = threading.Condition()
         self._args: tuple | None = None
         self._stop = False
-        self._thread = threading.Thread(target=self._run, name="live-publish", daemon=True)
-        self._thread.start()
+        # 여러 장을 동시에 보내 터널 왕복 시간(약 100ms)을 겹친다. 각 스레드는 Redis 연결 풀에서 따로 연결을 쓴다.
+        # shortcut: 순서 보장 없음. 늦게 출발한 프레임이 먼저 도착하면 웹이 직전 프레임을 한 번(≤0.1초) 보일 수 있다.
+        # 눈에 띄면 Redis Lua로 순번 비교 후 쓰기로 바꾼다.
+        self._threads = [threading.Thread(target=self._run, name=f"live-publish-{i}", daemon=True)
+                         for i in range(workers)]
+        for t in self._threads:
+            t.start()
 
     def publish(self, *args) -> None:
         with self._cond:
@@ -176,8 +184,9 @@ class LatestSender:
     def close(self) -> None:
         with self._cond:
             self._stop = True
-            self._cond.notify()
-        self._thread.join(timeout=5)
+            self._cond.notify_all()
+        for t in self._threads:
+            t.join(timeout=5)
 
     def _run(self) -> None:
         while True:

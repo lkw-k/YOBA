@@ -108,7 +108,7 @@ def main(argv: list[str] | None = None) -> None:
         if args.publish:
             rc = service.redis
             client = redis.Redis.from_url(rc.url, socket_timeout=rc.socket_timeout, socket_connect_timeout=rc.socket_timeout)
-            publisher = LatestSender(LivePublisher(client, rc, cameras[0]))
+            publisher = LatestSender(LivePublisher(client, rc, cameras[0]), rc.live_senders)
         try:
             run_live(service, cameras[0], publisher=publisher)
         finally:
