@@ -47,3 +47,4 @@ redis:                       # spec 5.8, 9
   image_url_base: /snapshots
   socket_timeout: 5          # Redis 응답 대기(초). 장애 시 파이프라인이 오래 멈추지 않게 (잠정)
   live_frame_ttl_ms: 5000    # 실시간 모드 yoba:frame TTL(ms). 웹 서버와 맞춘 값 (확정: 웹 담당과 협의)
+  live_senders: 3            # 실시간 모드에서 동시에 보내는 프레임 수. 터널 왕복이 느릴수록 늘린다 (잠정: 실측 후 조정)

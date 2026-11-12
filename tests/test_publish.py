@@ -182,3 +182,41 @@ def test_latest_sender_skips_stale_frames_and_never_blocks():
     gate.set()
     s.close()
     assert sent[-1] == 4 and len(sent) < 5  # 밀린 프레임은 건너뛰고 마지막 것은 반드시 보낸다
+
+
+def test_latest_sender_overlaps_slow_sends_with_workers():
+    import threading
+    import time
+
+    from yoba.publish import LatestSender
+
+    lock, active, peak = threading.Lock(), [0], [0]
+
+    class Slow:
+        def publish(self, *args):
+            with lock:
+                active[0] += 1
+                peak[0] = max(peak[0], active[0])
+            time.sleep(0.1)  # 터널 왕복
+            with lock:
+                active[0] -= 1
+
+    s = LatestSender(Slow(), workers=3)
+    for i in range(10):
+        s.publish(i)
+        time.sleep(0.02)
+    s.close()
+    assert peak[0] >= 2  # 앞 전송이 끝나기 전에 다음 프레임을 보낸다
+
+
+def test_live_publish_counters_are_thread_safe(r):
+    import threading
+
+    lp = LivePublisher(r, RedisConfig(), LIVE_CAM)
+    ts = [threading.Thread(target=lambda: [lp.publish((1, 1), {"front": 0}, None, 1, 1) for _ in range(50)])
+          for _ in range(4)]
+    for t in ts:
+        t.start()
+    for t in ts:
+        t.join()
+    assert lp.frames_total == 200 and lp.blur_fail_total == 200

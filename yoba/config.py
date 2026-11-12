@@ -89,6 +89,7 @@ class RedisConfig:
     image_url_base: str = "/snapshots"
     socket_timeout: float = 5.0
     live_frame_ttl_ms: int = 5000
+    live_senders: int = 3
 
 
 @dataclass(frozen=True)
@@ -189,6 +190,8 @@ def load_service(path: str | Path) -> ServiceConfig:
         raise ConfigError("redis.socket_timeout: 0보다 커야 함")
     if cfg.redis.live_frame_ttl_ms <= 0:
         raise ConfigError("redis.live_frame_ttl_ms: 0보다 커야 함")
+    if cfg.redis.live_senders < 1:
+        raise ConfigError("redis.live_senders: 1 이상")
     if cfg.queue_size < 1:
         raise ConfigError("queue_size: 1 이상")
     if cfg.blur.box_pad < 0:
